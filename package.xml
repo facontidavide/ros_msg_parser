@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package>
+  <name>ros_msg_parser</name>
+  <version>0.1.0</version>
+  <description>
+  Successor of ros_type_introspection
+  </description>
+
+  <maintainer email="davide.faconti@gmail.com">Davide Faconti</maintainer>
+  <license>BSD</license>
+
+
+  <url>http://www.ros.org/wiki/ros_type_introspection</url>
+  <author email="davide.faconti@gmail.com">Davide Faconti</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+    <build_depend>roscpp</build_depend>
+    <build_depend>roscpp_serialization</build_depend>
+    <build_depend>rosbag_storage</build_depend>
+
+    <run_depend>roscpp</run_depend>
+    <run_depend>roscpp_serialization</run_depend>
+    <run_depend>rosbag_storage</run_depend>
+
+    <test_depend>gtest</test_depend>
+    <test_depend>geometry_msgs</test_depend>
+    <test_depend>sensor_msgs</test_depend>
+    <test_depend>tf2</test_depend>
+
+</package>
