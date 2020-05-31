@@ -91,51 +91,36 @@ void Parser::registerMessage(const std::string& definition)
 
     for (const ROSField& field : msg_definition->fields())
     {
-      if (field.isConstant())
+      if (field.isConstant() == false)
       {
-        continue;
-      }
-      // Let's add first a child to string_node
-      field_node->addChild(&field);
-      FieldTreeNode* new_string_node = &(field_node->children().back());
+        // Let's add first a child to string_node
+        field_node->addChild({ &field });
+        FieldTreeNode* new_string_node = &(field_node->children().back());
 
-      const ROSMessage* next_msg = nullptr;
-      // builtin types will not trigger a recursion
-      if (field.type().isBuiltin() == false)
-      {
-        next_msg = getMessageByType(field.type());
-        if (next_msg == nullptr)
+        const ROSMessage* next_msg = nullptr;
+        // builtin types will not trigger a recursion
+        if (field.type().isBuiltin() == false)
         {
-          throw std::runtime_error("This type was not registered ");
+          next_msg = getMessageByType(field.type());
+          if (next_msg == nullptr)
+          {
+            throw std::runtime_error("This type was not registered ");
+          }
+          msg_node->addChild(next_msg);
+          MessageTreeNode* new_msg_node = &(msg_node->children().back());
+          recursiveTreeCreator(next_msg, new_string_node, new_msg_node);
         }
-        msg_node->addChild(next_msg);
-        MessageTreeNode* new_msg_node = &(msg_node->children().back());
-        recursiveTreeCreator(next_msg, new_string_node, new_msg_node);
-
       }  // end of field.isConstant()
     }    // end of for fields
   };     // end of lambda
 
   auto& first_msg_type = _message_info->type_list.front();
   _message_info->message_tree.root()->setValue(&first_msg_type);
-  _message_info->field_tree.root()->setValue( _dummy_root_field.get() );
+  _message_info->field_tree.root()->setValue({ &_dummy_root_field });
 
   // start recursion
   recursiveTreeCreator(&_message_info->type_list.front(), _message_info->field_tree.root(),
                        _message_info->message_tree.root());
-}
-
-Parser::Parser(const std::string &topic_name, const ROSType &msg_type, const std::string &definition)
-  : _message_info( new ROSMessageInfo)
-  , _global_warnings(&std::cerr)
-  , _topic_name(topic_name)
-  , _msg_type(msg_type)
-  , _discard_large_array(DISCARD_LARGE_ARRAYS)
-  , _max_array_size(100)
-  , _blob_policy(STORE_BLOB_AS_COPY)
-  , _dummy_root_field( new ROSField(_msg_type, topic_name) )
-{
-  registerMessage(definition);
 }
 
 const std::shared_ptr<ROSMessageInfo>& Parser::getMessageInfo() const
@@ -419,7 +404,7 @@ bool Parser::deserializeIntoFlatMsg(Span<const uint8_t> buffer, FlatMessage* fla
   return entire_message_parse;
 }
 
-bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_txt, bool pretty_printer) const
+bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_txt) const
 {
   rapidjson::Document json_document;
   rapidjson::Document::AllocatorType& alloc = json_document.GetAllocator();
@@ -578,20 +563,7 @@ bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_t
 
   deserializeImpl(_message_info->message_tree.croot(), json_node);
 
-  auto topic_name = rapidjson::StringRef(_topic_name.data(), _topic_name.size());
-  json_document.AddMember("topic", topic_name, alloc);
-  json_document.AddMember("msg", json_node, alloc);
-
-  rapidjson::StringBuffer json_buffer;
-  if( pretty_printer ){
-    rapidjson::Writer<rapidjson::StringBuffer> json_writer(json_buffer);
-    json_document.Accept(json_writer);
-  }
-  else{
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> json_writer(json_buffer);
-    json_document.Accept(json_writer);
-  }
-  *json_txt = json_buffer.GetString();
+  *json_txt =  json_document.dump();
 
   return true;
 }
