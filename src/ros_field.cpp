@@ -40,11 +40,11 @@
 namespace RosMsgParser{
 
 ROSField::ROSField(const std::string &definition):
-  _array_size(1)
+  _is_array(false), _array_size(1)
 {
   static const  boost::regex type_regex("[a-zA-Z][a-zA-Z0-9_]*"
-                                        "(/[a-zA-Z][a-zA-Z0-9_]*){0,1}"
-                                        "(\\[[0-9]*\\]){0,1}");
+                                       "(/[a-zA-Z][a-zA-Z0-9_]*){0,1}"
+                                       "(\\[[0-9]*\\]){0,1}");
 
   static const  boost::regex field_regex("[a-zA-Z][a-zA-Z0-9_]*");
 
@@ -84,10 +84,12 @@ ROSField::ROSField(const std::string &definition):
 
     if (what.size() == 3) {
       _array_size = -1;
+      _is_array = true;
     }
     else if (what.size() == 4) {
       std::string size(what[3].first, what[3].second);
       _array_size = size.empty() ? -1 : atoi(size.c_str());
+      _is_array = true;
     }
     else {
       throw std::runtime_error("Bad array size when parsing field:  " + definition);

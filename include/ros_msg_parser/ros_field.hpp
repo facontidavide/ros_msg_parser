@@ -32,9 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 * *******************************************************************/
 
-
-#ifndef ROS_INTROSPECTION_ROSFIELD_H
-#define ROS_INTROSPECTION_ROSFIELD_H
+#pragma once
 
 #include <vector>
 #include <map>
@@ -67,7 +65,7 @@ public:
   const std::string& value() const   { return _value; }
 
   /// True if the type is an array
-  bool isArray() const { return _array_size != 1; }
+  bool isArray() const { return _is_array; }
 
   /// 1 if !is_array, -1 if is_array and array is
   /// variable length, otherwise length in name
@@ -79,9 +77,10 @@ protected:
   std::string _fieldname;
   ROSType     _type;
   std::string _value;
+  bool _is_array;
   int _array_size;
 };
 
 }
 
-#endif
+
