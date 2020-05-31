@@ -404,7 +404,7 @@ bool Parser::deserializeIntoFlatMsg(Span<const uint8_t> buffer, FlatMessage* fla
   return entire_message_parse;
 }
 
-bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_txt) const
+bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_txt, bool pretty_printer) const
 {
   rapidjson::Document json_document;
   rapidjson::Document::AllocatorType& alloc = json_document.GetAllocator();
@@ -568,8 +568,14 @@ bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_t
   json_document.AddMember("msg", json_node, alloc);
 
   rapidjson::StringBuffer json_buffer;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> json_writer(json_buffer);
-  json_document.Accept(json_writer);
+  if( pretty_printer ){
+    rapidjson::Writer<rapidjson::StringBuffer> json_writer(json_buffer);
+    json_document.Accept(json_writer);
+  }
+  else{
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> json_writer(json_buffer);
+    json_document.Accept(json_writer);
+  }
   *json_txt = json_buffer.GetString();
 
   return true;

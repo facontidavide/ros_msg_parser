@@ -169,7 +169,8 @@ public:
                               FlatMessage* flat_container_output) const;
 
   bool deserializeIntoJson(Span<const uint8_t> buffer,
-                           std::string* json_txt) const;
+                           std::string* json_txt,
+                           bool pretty_printer = false) const;
 
   typedef std::function<void(const ROSType&, Span<uint8_t>&)> VisitingCallback;
 
