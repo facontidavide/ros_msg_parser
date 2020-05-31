@@ -103,6 +103,13 @@ template <> inline void ReadFromBuffer( const Span<const uint8_t>& buffer, size_
   destination.assign( buffer_ptr, string_size );
 }
 
+template <typename T> inline T ReadFromBuffer( const Span<const uint8_t>& buffer, size_t& offset)
+{
+  T out;
+  ReadFromBuffer(buffer, offset, out);
+  return out;
+}
+
 template <typename T> inline
 Variant ReadFromBufferToVariant( const Span<const uint8_t>& buffer, size_t& offset)
 {

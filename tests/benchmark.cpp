@@ -49,10 +49,13 @@ static void BM_Joints(benchmark::State& state)
   FlatMessage flat_container;
   RenamedValues renamed_vals;
 
+  std::string json;
   while (state.KeepRunning())
   {
-    parser.deserializeIntoFlatMsg(Span<uint8_t>(buffer), &flat_container);
-    CreateRenamedValues(flat_container, renamed_vals);
+//    parser.deserializeIntoFlatMsg(buffer, &flat_container);
+//    CreateRenamedValues(flat_container, renamed_vals);
+
+    parser.deserializeIntoJson(buffer, &json);
   }
 }
 

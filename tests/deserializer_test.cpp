@@ -63,6 +63,11 @@ TEST(Deserialize, JointState)
     }
   }
 
+  std::string json_txt;
+  parser.deserializeIntoJson(Span<uint8_t>(buffer), &json_txt);
+
+  std::cout << json_txt << std::endl;
+
   EXPECT_EQ( flat_container.value[0].first.toStdString() , ("JointState/header/seq"));
   EXPECT_EQ( flat_container.value[0].second.convert<int>(), 2016 );
   EXPECT_EQ( flat_container.value[1].first.toStdString() , ("JointState/header/stamp"));
@@ -413,10 +418,15 @@ TEST( Deserialize, SensorImage)
         Definition<sensor_msgs::Image>::value());
 
   sensor_msgs::Image image;
+  image.header.seq = 42;
+  image.header.stamp = ros::Time(666.777);
+  image.header.frame_id = "hello";
   image.width = 640;
   image.height = 480;
   image.step = 3*image.width;
-  image.data.resize( image.height * image.step );
+  image.data.resize( image.height * image.step, 1 );
+  image.is_bigendian = 1;
+
 
   std::vector<uint8_t> buffer( ros::serialization::serializationLength(image) );
   ros::serialization::OStream stream(buffer.data(), buffer.size());
@@ -428,6 +438,12 @@ TEST( Deserialize, SensorImage)
         parser.deserializeIntoFlatMsg(Span<uint8_t>(buffer),
                                             &flat_container)
         );
+
+  std::string json_txt;
+  parser.deserializeIntoJson(buffer, &json_txt);
+
+  std::cout << json_txt << std::endl;
+
 }
 
 
