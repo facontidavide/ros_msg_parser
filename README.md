@@ -44,14 +44,14 @@ void topicCallback(const RosMsgParser::ShapeShifter& msg,
   for (auto it : deserialized_msg->renamed_vals)
   {
     const std::string& key = it.first;
-    const double value = it.second;
-    printf(" %s = %f\n", key.c_str(), value);
+    double value = it.second;
+    std::cout << key << " = " << value << std::endl;
   }
   for (auto it : deserialized_msg->flat_msg.name)
   {
     const std::string& key = it.first.toStdString();
     const std::string& value = it.second;
-    printf(" %s = %s\n", key.c_str(), value.c_str());
+    std::cout << key << " = " << value << std::endl;
   }
 }
 
@@ -131,13 +131,13 @@ int main(int argc, char** argv)
     {
       const std::string& key = it.first;
       const double value = it.second;
-      printf(" %s = %f\n", key.c_str(), value);
+      std::cout << key << " = " << value << std::endl;
     }
     for (const auto& it : deserialized_msg->flat_msg.name)
     {
       const std::string& key = it.first.toStdString();
       const std::string& value = it.second;
-      printf(" %s = %s\n", key.c_str(), value.c_str());
+      std::cout << key << " = " << value << std::endl;
     }
   }
   return 0;
