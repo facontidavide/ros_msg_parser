@@ -91,32 +91,34 @@ void Parser::registerMessage(const std::string& definition)
 
     for (const ROSField& field : msg_definition->fields())
     {
-      if (field.isConstant() == false)
+      if (field.isConstant())
       {
-        // Let's add first a child to string_node
-        field_node->addChild({ &field });
-        FieldTreeNode* new_string_node = &(field_node->children().back());
+        continue;
+      }
+      // Let's add first a child to string_node
+      field_node->addChild(&field);
+      FieldTreeNode* new_string_node = &(field_node->children().back());
 
-        const ROSMessage* next_msg = nullptr;
-        // builtin types will not trigger a recursion
-        if (field.type().isBuiltin() == false)
+      const ROSMessage* next_msg = nullptr;
+      // builtin types will not trigger a recursion
+      if (field.type().isBuiltin() == false)
+      {
+        next_msg = getMessageByType(field.type());
+        if (next_msg == nullptr)
         {
-          next_msg = getMessageByType(field.type());
-          if (next_msg == nullptr)
-          {
-            throw std::runtime_error("This type was not registered ");
-          }
-          msg_node->addChild(next_msg);
-          MessageTreeNode* new_msg_node = &(msg_node->children().back());
-          recursiveTreeCreator(next_msg, new_string_node, new_msg_node);
+          throw std::runtime_error("This type was not registered ");
         }
+        msg_node->addChild(next_msg);
+        MessageTreeNode* new_msg_node = &(msg_node->children().back());
+        recursiveTreeCreator(next_msg, new_string_node, new_msg_node);
+
       }  // end of field.isConstant()
     }    // end of for fields
   };     // end of lambda
 
   auto& first_msg_type = _message_info->type_list.front();
   _message_info->message_tree.root()->setValue(&first_msg_type);
-  _message_info->field_tree.root()->setValue({ &_dummy_root_field });
+  _message_info->field_tree.root()->setValue( _dummy_root_field.get() );
 
   // start recursion
   recursiveTreeCreator(&_message_info->type_list.front(), _message_info->field_tree.root(),

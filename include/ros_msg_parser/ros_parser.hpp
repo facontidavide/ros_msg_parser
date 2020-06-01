@@ -85,7 +85,7 @@ public:
     , _discard_large_array(DISCARD_LARGE_ARRAYS)
     , _max_array_size(100)
     , _blob_policy(STORE_BLOB_AS_COPY)
-    , _dummy_root_field( _msg_type.baseName() + " " + topic_name )
+    , _dummy_root_field( new ROSField(_msg_type.baseName() + " " + topic_name) )
   {
     registerMessage(definition);
   }
@@ -214,7 +214,7 @@ private:
   MaxArrayPolicy _discard_large_array;
   size_t _max_array_size;
   BlobPolicy _blob_policy;
-  ROSField _dummy_root_field;
+  std::shared_ptr<ROSField> _dummy_root_field;
 };
 
 typedef std::vector<std::pair<std::string, double> > RenamedValues;

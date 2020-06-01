@@ -170,7 +170,7 @@ template <typename T> inline
 TreeNode<T> *TreeNode<T>::addChild(const T& value)
 {
   assert(_children.capacity() > _children.size() );
-  _children.push_back( TreeNode<T>(this) );
+  _children.emplace_back( this );
   _children.back().setValue( value );
   return &_children.back();
 }
