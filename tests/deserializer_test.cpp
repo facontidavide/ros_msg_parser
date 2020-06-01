@@ -15,7 +15,7 @@ using namespace RosMsgParser;
 
 TEST(Deserialize, JointState)
 {
-  RosMsgParser::Parser parser("JointState",
+  RosMsgParser::Parser parser("/js_publisher/joint_state",
                               ROSType(DataType<sensor_msgs::JointState>::value()),
                               Definition<sensor_msgs::JointState>::value());
 
@@ -68,47 +68,47 @@ TEST(Deserialize, JointState)
 
   std::cout << json_txt << std::endl;
 
-  EXPECT_EQ( flat_container.value[0].first.toStdString() , ("JointState/header/seq"));
+  EXPECT_EQ( flat_container.value[0].first.toStdString() , ("/js_publisher/joint_state/header/seq"));
   EXPECT_EQ( flat_container.value[0].second.convert<int>(), 2016 );
-  EXPECT_EQ( flat_container.value[1].first.toStdString() , ("JointState/header/stamp"));
+  EXPECT_EQ( flat_container.value[1].first.toStdString() , ("/js_publisher/joint_state/header/stamp"));
   EXPECT_EQ( flat_container.value[1].second.convert<double>(),   double(1234.567)  );
   EXPECT_EQ( flat_container.value[1].second.convert<ros::Time>(), joint_state.header.stamp  );
 
-  EXPECT_EQ( flat_container.value[2].first.toStdString() , ("JointState/position.0"));
+  EXPECT_EQ( flat_container.value[2].first.toStdString() , ("/js_publisher/joint_state/position.0"));
   EXPECT_EQ( flat_container.value[2].second.convert<int>(), 10 );
-  EXPECT_EQ( flat_container.value[3].first.toStdString() , ("JointState/position.1"));
+  EXPECT_EQ( flat_container.value[3].first.toStdString() , ("/js_publisher/joint_state/position.1"));
   EXPECT_EQ( flat_container.value[3].second.convert<int>(), 11 );
-  EXPECT_EQ( flat_container.value[4].first.toStdString() , ("JointState/position.2"));
+  EXPECT_EQ( flat_container.value[4].first.toStdString() , ("/js_publisher/joint_state/position.2"));
   EXPECT_EQ( flat_container.value[4].second.convert<int>(), 12 );
-  EXPECT_EQ( flat_container.value[16].first.toStdString() , ("JointState/position.14"));
+  EXPECT_EQ( flat_container.value[16].first.toStdString() , ("/js_publisher/joint_state/position.14"));
   EXPECT_EQ( flat_container.value[16].second.convert<int>(), 24 );
 
-  EXPECT_EQ( flat_container.value[17].first.toStdString() , ("JointState/velocity.0"));
+  EXPECT_EQ( flat_container.value[17].first.toStdString() , ("/js_publisher/joint_state/velocity.0"));
   EXPECT_EQ( flat_container.value[17].second.convert<int>(), 30 );
-  EXPECT_EQ( flat_container.value[18].first.toStdString() , ("JointState/velocity.1"));
+  EXPECT_EQ( flat_container.value[18].first.toStdString() , ("/js_publisher/joint_state/velocity.1"));
   EXPECT_EQ( flat_container.value[18].second.convert<int>(), 31 );
-  EXPECT_EQ( flat_container.value[19].first.toStdString() , ("JointState/velocity.2"));
+  EXPECT_EQ( flat_container.value[19].first.toStdString() , ("/js_publisher/joint_state/velocity.2"));
   EXPECT_EQ( flat_container.value[19].second.convert<int>(), 32 );
-  EXPECT_EQ( flat_container.value[31].first.toStdString() , ("JointState/velocity.14"));
+  EXPECT_EQ( flat_container.value[31].first.toStdString() , ("/js_publisher/joint_state/velocity.14"));
   EXPECT_EQ( flat_container.value[31].second.convert<int>(), 44 );
 
-  EXPECT_EQ( flat_container.value[32].first.toStdString() , ("JointState/effort.0"));
+  EXPECT_EQ( flat_container.value[32].first.toStdString() , ("/js_publisher/joint_state/effort.0"));
   EXPECT_EQ( flat_container.value[32].second.convert<int>(), 50 );
-  EXPECT_EQ( flat_container.value[33].first.toStdString() , ("JointState/effort.1"));
+  EXPECT_EQ( flat_container.value[33].first.toStdString() , ("/js_publisher/joint_state/effort.1"));
   EXPECT_EQ( flat_container.value[33].second.convert<int>(), 51 );
-  EXPECT_EQ( flat_container.value[34].first.toStdString() , ("JointState/effort.2"));
+  EXPECT_EQ( flat_container.value[34].first.toStdString() , ("/js_publisher/joint_state/effort.2"));
   EXPECT_EQ( flat_container.value[34].second.convert<int>(), 52 );
-  EXPECT_EQ( flat_container.value[46].first.toStdString() , ("JointState/effort.14"));
+  EXPECT_EQ( flat_container.value[46].first.toStdString() , ("/js_publisher/joint_state/effort.14"));
   EXPECT_EQ( flat_container.value[46].second.convert<int>(), 64 );
 
-  EXPECT_EQ( flat_container.name[0].first.toStdString() , ("JointState/header/frame_id"));
+  EXPECT_EQ( flat_container.name[0].first.toStdString() , ("/js_publisher/joint_state/header/frame_id"));
   EXPECT_EQ( flat_container.name[0].second, ("pippo") );
 
-  EXPECT_EQ( flat_container.name[1].first.toStdString() , ("JointState/name.0"));
+  EXPECT_EQ( flat_container.name[1].first.toStdString() , ("/js_publisher/joint_state/name.0"));
   EXPECT_EQ( flat_container.name[1].second, ("hola") );
-  EXPECT_EQ( flat_container.name[2].first.toStdString() , ("JointState/name.1"));
+  EXPECT_EQ( flat_container.name[2].first.toStdString() , ("/js_publisher/joint_state/name.1"));
   EXPECT_EQ( flat_container.name[2].second, ("ciao") );
-  EXPECT_EQ( flat_container.name[3].first.toStdString() , ("JointState/name.2"));
+  EXPECT_EQ( flat_container.name[3].first.toStdString() , ("/js_publisher/joint_state/name.2"));
   EXPECT_EQ( flat_container.name[3].second, ("bye") );
 
   //---------------------------------

@@ -39,6 +39,12 @@
 
 namespace RosMsgParser{
 
+ROSField::ROSField(const ROSType &type, const std::string &name):
+  _fieldname(name), _type(type), _is_array(false), _array_size(1)
+{
+
+}
+
 ROSField::ROSField(const std::string &definition):
   _is_array(false), _array_size(1)
 {

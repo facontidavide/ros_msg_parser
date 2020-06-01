@@ -77,18 +77,7 @@ public:
    *                       - rosbag::MessageInstance::getMessageDefinition()
    *                       - ros::message_traits::Definition< __your_type__ >::value()
    * */
-  Parser(const std::string& topic_name, const ROSType& msg_type, const std::string& definition)
-    : _message_info( new ROSMessageInfo)
-    , _global_warnings(&std::cerr)
-    , _topic_name(topic_name)
-    , _msg_type(msg_type)
-    , _discard_large_array(DISCARD_LARGE_ARRAYS)
-    , _max_array_size(100)
-    , _blob_policy(STORE_BLOB_AS_COPY)
-    , _dummy_root_field( new ROSField(_msg_type.baseName() + " " + topic_name) )
-  {
-    registerMessage(definition);
-  }
+  Parser(const std::string& topic_name, const ROSType& msg_type, const std::string& definition);
 
   enum MaxArrayPolicy: bool {
     DISCARD_LARGE_ARRAYS = true,

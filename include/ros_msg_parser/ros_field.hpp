@@ -43,11 +43,19 @@ namespace RosMsgParser{
 
 class ROSMessage;
 
+class Parser;
+
 /**
  * @brief A ROSMessage will contain one or more ROSField(s). Each field is little more
  * than a name / type pair.
  */
 class ROSField {
+protected:
+
+  ROSField(const ROSType& type, const std::string& name );
+
+  friend class RosMsgParser::Parser;
+
 public:
 
   ROSField(const std::string& definition );
