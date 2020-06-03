@@ -583,12 +583,14 @@ bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_t
   json_document.AddMember("msg", json_node, alloc);
 
   rapidjson::StringBuffer json_buffer;
+  json_buffer.Reserve(2048);
+
   if( pretty_printer ){
-    rapidjson::Writer<rapidjson::StringBuffer> json_writer(json_buffer);
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> json_writer(json_buffer);
     json_document.Accept(json_writer);
   }
   else{
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> json_writer(json_buffer);
+    rapidjson::Writer<rapidjson::StringBuffer> json_writer(json_buffer);
     json_document.Accept(json_writer);
   }
   *json_txt = json_buffer.GetString();
