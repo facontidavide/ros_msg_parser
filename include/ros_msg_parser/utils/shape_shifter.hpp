@@ -37,7 +37,6 @@
 #include "ros/console.h"
 #include "ros/assert.h"
 #include <vector>
-#include <boost/flyweight.hpp>
 #include <ros/message_traits.h>
 #include "ros_msg_parser/ros_parser.hpp"
 
@@ -96,9 +95,9 @@ public:
 
 private:
 
-  boost::flyweight<std::string> md5_;
-  boost::flyweight<std::string> datatype_;
-  boost::flyweight<std::string> msg_def_;
+  std::string md5_;
+  std::string datatype_;
+  std::string msg_def_;
   bool typed_;
 
   mutable std::vector<uint8_t> msgBuf_;
