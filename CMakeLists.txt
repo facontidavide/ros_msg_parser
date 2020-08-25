@@ -3,7 +3,9 @@ project(ros_msg_parser)
 
 find_package(Boost REQUIRED COMPONENTS regex)
 
-find_package(catkin REQUIRED COMPONENTS 
+find_package(catkin REQUIRED COMPONENTS
+    geometry_msgs
+    sensor_msgs
     roscpp
     roscpp_serialization
     rosbag_storage
@@ -13,13 +15,14 @@ find_package(catkin REQUIRED COMPONENTS
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 ")
 
 catkin_package(
-   INCLUDE_DIRS include
-   LIBRARIES ros_msg_parser
-   CATKIN_DEPENDS 
-   roscpp 
-   roscpp_serialization
-   rosbag_storage
-   DEPENDS 
+  INCLUDE_DIRS include
+  LIBRARIES ros_msg_parser
+  CATKIN_DEPENDS
+    geometry_msgs
+    sensor_msgs
+    roscpp
+    roscpp_serialization
+    rosbag_storage
 )
 
 ###########
@@ -47,17 +50,6 @@ include_directories(
 
 target_link_libraries(ros_msg_parser ${catkin_LIBRARIES})
 
-
-add_executable(ros_msg_parsing_test
-#    tests/parser_test.cpp
-    tests/deserializer_test.cpp
-    )
-
-target_link_libraries(ros_msg_parsing_test
-    ros_msg_parser
-    gtest
-    ${catkin_LIBRARIES}
-    )
 
 find_package(benchmark CONFIG)
 if (benchmark_FOUND)
@@ -92,16 +84,15 @@ target_link_libraries(selective_deserialization ros_msg_parser ${catkin_LIBRARIE
 ## Testing ##
 #############
 if(CATKIN_ENABLE_TESTING)
+  add_executable(ros_msg_parsing_test
+    tests/deserializer_test.cpp
+  )
 
-#    catkin_add_gtest(ros_parsing_test
-##        tests/parser_test.cpp
-#        tests/deserializer_test.cpp
-#        )
-
-#    target_link_libraries(ros_parsing_test
-#        ros_msg_parser
-#        ${catkin_LIBRARIES}
-#        )
+  target_link_libraries(ros_msg_parsing_test
+    ros_msg_parser
+    gtest
+    ${catkin_LIBRARIES}
+  )
 endif()
 
 #############
