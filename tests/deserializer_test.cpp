@@ -477,9 +477,9 @@ TEST(Deserialize, JointStateExtracSubfield)
   //---------------------------------
   Span<uint8_t> buffer_view(buffer);
 
-  auto header = parser.extractField<std_msgs::Header>("PoseStamped", buffer_view);
-  auto point  = parser.extractField<geometry_msgs::Point>("PoseStamped", buffer_view);
-  auto quat   = parser.extractField<geometry_msgs::Quaternion>("PoseStamped", buffer_view);
+  auto header = parser.extractField<std_msgs::Header>(buffer_view);
+  auto point  = parser.extractField<geometry_msgs::Point>(buffer_view);
+  auto quat   = parser.extractField<geometry_msgs::Quaternion>(buffer_view);
 
   EXPECT_EQ(header.seq,        pose.header.seq);
   EXPECT_EQ(header.stamp.sec,  pose.header.stamp.sec);

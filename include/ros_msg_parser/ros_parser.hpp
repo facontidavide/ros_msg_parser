@@ -180,7 +180,7 @@ public:
                             VisitingCallback callback) const;
 
   template <typename T>
-  T extractField(const std::string& msg_identifier, const Span<uint8_t> &buffer);
+  T extractField(const Span<uint8_t> &buffer) const;
 
 
   /// Change where the warning messages are displayed.
@@ -251,8 +251,7 @@ private:
 //---------------------------------------------------
 
 template<typename T> inline
-T Parser::extractField(const std::string &msg_identifier,
-                       const Span<uint8_t> &buffer)
+T Parser::extractField(const Span<uint8_t> &buffer) const
 {
     T out;
     bool found = false;
