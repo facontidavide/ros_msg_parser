@@ -118,6 +118,9 @@ public:
 
   void assign(const char* buffer, size_t length);
 
+  // Direct access to raw data. Undefined behavior if this variant holds a STRING
+  const uint8_t* getRawStorage() const;
+
 private:
 
   union {
@@ -164,6 +167,10 @@ inline Variant::~Variant()
 
 inline BuiltinType Variant::getTypeID() const {
   return _type;
+}
+
+inline const uint8_t* Variant::getRawStorage() const { 
+  return _storage.raw_data.data(); 
 }
 
 template<typename T> inline T Variant::extract( ) const
