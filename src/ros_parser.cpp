@@ -626,12 +626,6 @@ void ParsersCollection::registerParser(const std::string& topic_name, const Shap
 {
   registerParser(topic_name, msg.getDataType(), msg.getMessageDefinition());
 }
-
-void ParsersCollection::registerParser(const std::string& topic_name, const rosbag::ConnectionInfo& connection)
-{
-  registerParser(topic_name, connection.datatype, connection.msg_def);
-}
-
 const Parser* ParsersCollection::getParser(const std::string& topic_name) const
 {
   auto it = _pack.find(topic_name);
@@ -666,32 +660,6 @@ const ParsersCollection::DeserializedMsg* ParsersCollection::deserialize(const s
 {
   Span<const uint8_t> buffer(msg.raw_data(), msg.size());
   return deserialize(topic_name, buffer);
-}
-
-const ParsersCollection::DeserializedMsg* ParsersCollection::deserialize(const std::string& topic_name,
-                                                                         const rosbag::MessageInstance& msg)
-{
-  auto it = _pack.find(topic_name);
-  if (it != _pack.end())
-  {
-    CachedPack& pack = it->second;
-    Parser& parser = pack.parser;
-    FlatMessage& flat_msg = pack.msg.flat_msg;
-    RenamedValues& renamed = pack.msg.renamed_vals;
-
-    // write the message into the buffer
-    _buffer.resize(msg.size());
-    ros::serialization::OStream stream(_buffer.data(), msg.size());
-    msg.write(stream);
-
-    Span<const uint8_t> buffer(_buffer.data(), msg.size());
-
-    parser.deserializeIntoFlatMsg(buffer, &flat_msg);
-    CreateRenamedValues(flat_msg, renamed);
-
-    return &pack.msg;
-  }
-  return nullptr;
 }
 
 }  // namespace RosMsgParser
