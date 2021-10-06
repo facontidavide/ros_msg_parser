@@ -62,7 +62,7 @@ if (benchmark_FOUND)
     target_link_libraries(ros_parser_benchmark
         ros_msg_parser
         ${catkin_LIBRARIES}
-        benchmark
+        benchmark::benchmark
         pthread
         )
 endif(benchmark_FOUND)
