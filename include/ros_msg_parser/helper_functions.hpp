@@ -97,6 +97,11 @@ template <> inline void ReadFromBuffer( const Span<const uint8_t>& buffer, size_
     throw std::runtime_error("Buffer overrun in RosMsgParser::ReadFromBuffer");
   }
 
+  if (string_size == 0) {
+    destination = std::string();
+    return;
+  }
+
   const char* buffer_ptr = reinterpret_cast<const char*>( &buffer[offset] );
   offset += string_size;
 
