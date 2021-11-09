@@ -38,7 +38,6 @@
 #include "ros/assert.h"
 #include <vector>
 #include <ros/message_traits.h>
-#include "ros_msg_parser/ros_parser.hpp"
 
 namespace RosMsgParser
 {
