@@ -7,7 +7,7 @@
   </description>
 
   <maintainer email="davide.faconti@gmail.com">Davide Faconti</maintainer>
-  <license>BSD</license>
+  <license>MIT</license>
 
 
   <url>http://www.ros.org/wiki/ros_type_introspection</url>

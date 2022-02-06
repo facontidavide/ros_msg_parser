@@ -145,6 +145,7 @@ int main(int argc, char** argv)
 ```
 
 # Acknowledgements
+
 This library is inspired by these other libraries 
 [matlab_rosbag](https://github.com/bcharrow/matlab_rosbag) and 
 [cpp_introspection](https://github.com/tu-darmstadt-ros-pkg/cpp_introspection).
