@@ -82,7 +82,7 @@ std::vector<std::string> SplitMultipleMessageDefinitions(const std::string &mult
   return parts;
 }
 
-std::vector<ROSMessage::Ptr> AddMessageDefinitionsToLibrary(
+std::vector<ROSMessage::Ptr> ParseMessageDefinitions(
   const std::string& multi_def,
   const std::string& type_name )
 {
@@ -125,10 +125,10 @@ std::vector<ROSMessage::Ptr> AddMessageDefinitionsToLibrary(
   return parsed_msgs;
 }
 
-ROSMessageInfo BuildMessageInfo(const std::string &topic_name,
-                                const std::vector<ROSMessage::Ptr>& parsed_msgs)
+MessageSchema BuildMessageSchema(const std::string &topic_name,
+                               const std::vector<ROSMessage::Ptr>& parsed_msgs)
 {
-  ROSMessageInfo info;
+  MessageSchema info;
   info.topic_name = topic_name;
   info.root_msg = parsed_msgs.front();
 
@@ -171,10 +171,9 @@ ROSMessageInfo BuildMessageInfo(const std::string &topic_name,
     }    // end of for fields
   };     // end of recursiveTreeCreator
 
-  // start recursion
-  auto root_filed = new ROSField( info.root_msg->type(), topic_name);
-
-  info.field_tree.root()->setValue( root_filed );
+  // build root and start recursion
+  auto root_field = new ROSField( info.root_msg->type(), topic_name);
+  info.field_tree.root()->setValue( root_field );
 
   recursiveTreeCreator(info.root_msg, info.field_tree.root());
 

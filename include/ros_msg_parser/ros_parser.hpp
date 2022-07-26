@@ -31,7 +31,7 @@ namespace RosMsgParser{
 struct FlatMessage {
 
   /// Tree that the FieldTreeLeaf(s) refer to.
-  std::shared_ptr<ROSMessageInfo> msg_info;
+  std::shared_ptr<MessageSchema> schema;
 
   /// List of all those parsed fields that can be represented by a builtin value different from "string".
   /// This list will be filled by the funtion buildRosFlatType.
@@ -115,7 +115,7 @@ public:
    * @param msg_identifier String ID to identify the registered message (use registerMessageDefinition first).
    * @return               Pointer to the instance or nullptr if not registered.
    */
-  const std::shared_ptr<ROSMessageInfo> &getMessageInfo() const;
+  const std::shared_ptr<ROSMessageSchema> &getMessageInfo() const;
 
   const ROSMessage* getMessageByType(const ROSType& type) const;
 
@@ -166,7 +166,7 @@ public:
 private:
   void registerMessage(const std::string& definition);
 
-  std::shared_ptr<ROSMessageInfo> _message_info;
+  std::shared_ptr<ROSMessageSchema> _message_info;
 
 
   std::ostream* _global_warnings;

@@ -109,7 +109,7 @@ void Parser::registerMessage(const std::string& definition)
 }
 
 Parser::Parser(const std::string &topic_name, const ROSType &msg_type, const std::string &definition)
-  : _message_info( new ROSMessageInfo)
+  : _message_info( new ROSMessageSchema)
   , _global_warnings(&std::cerr)
   , _topic_name(topic_name)
   , _msg_type(msg_type)
@@ -121,7 +121,7 @@ Parser::Parser(const std::string &topic_name, const ROSType &msg_type, const std
   registerMessage(definition);
 }
 
-const std::shared_ptr<ROSMessageInfo>& Parser::getMessageInfo() const
+const std::shared_ptr<ROSMessageSchema>& Parser::getMessageInfo() const
 {
   return _message_info;
 }
