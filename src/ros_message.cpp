@@ -21,27 +21,25 @@
 *   SOFTWARE.
 */
 
-#include <boost/algorithm/string.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <boost/utility/string_ref.hpp>
+#include <string_view>
+#include <sstream>
+#include <regex>
 #include "ros_msg_parser/ros_message.hpp"
-#include <boost/regex.hpp>
-#include <boost/algorithm/string/regex.hpp>
 
 namespace RosMsgParser{
 
 ROSMessage::ROSMessage(const std::string &msg_def)
 {
   std::istringstream messageDescriptor(msg_def);
-  boost::match_results<std::string::const_iterator> what;
+  std::match_results<std::string::const_iterator> what;
 
   for (std::string line; std::getline(messageDescriptor, line, '\n') ; )
   {
     std::string::const_iterator begin = line.begin(), end = line.end();
 
     // Skip empty line or one that is a comment
-    if (boost::regex_search( begin, end, what,
-                             boost::regex("(^\\s*$|^\\s*#)")))
+    if (std::regex_search( begin, end, what,
+                           std::regex("(^\\s*$|^\\s*#)")))
     {
       continue;
     }
@@ -62,22 +60,73 @@ ROSMessage::ROSMessage(const std::string &msg_def)
   }
 }
 
-void ROSMessage::updateMissingPkgNames(const std::vector<const ROSType*> &all_types)
+std::vector<std::string> SplitMultipleMessageDefinitions(const std::string &multi_def)
 {
-  for (ROSField& field: _fields)
+  std::istringstream ss_msg(multi_def);
+
+  std::vector<std::string> parts;
+  std::string part;
+
+  for (std::string line; std::getline(ss_msg, line, '\n') ; )
   {
-    // if package name is missing, try to find msgName in the list of known_type
-    if( field.type().pkgName().size() == 0 )
+    if( line.find("========") == 0)
     {
-      for (const ROSType* known_type: all_types)
+      parts.emplace_back( std::move(part) );
+      part = {};
+    }
+    else{
+      part.append(line);
+      part.append("\n");
+    }
+  }
+  parts.emplace_back( std::move(part) );
+
+  return parts;
+}
+
+void AddMessageDefinitionsToLibrary(const std::string& multi_def,
+                                    RosMessageLibrary& library,
+                                    const std::string& type_name )
+{
+  auto parts = SplitMultipleMessageDefinitions(multi_def);
+  std::vector<ROSType> all_types;
+  std::vector<ROSMessage::Ptr> parsed_msgs;
+
+  for( int i = parts.size()-1; i>=0; i--)
+  {
+    auto msg = std::make_shared<ROSMessage>(parts[i]);
+    if( i == 0 && !type_name.empty() )
+    {
+      msg->setType( ROSType(type_name) );
+    }
+
+    parsed_msgs.push_back( msg );
+    all_types.push_back( msg->type() );
+  }
+
+  // adjust types with undefined package type
+  for(const auto& msg: parsed_msgs)
+  {
+    for (ROSField& field: msg->fields())
+    {
+      // if package name is missing, try to find msgName in the list of known_type
+      if( field.type().pkgName().empty() )
       {
-        if( field.type().msgName().compare( known_type->msgName() ) == 0  )
+        for (const ROSType& known_type: all_types)
         {
-          field._type.setPkgName( known_type->pkgName() );
-          break;
+          if( field.type().msgName() == known_type.msgName()  )
+          {
+            field.changeType( known_type );
+            break;
+          }
         }
       }
     }
+  }
+
+  for(const auto& msg: parsed_msgs)
+  {
+    library.insert( {msg->type().baseName(), msg} );
   }
 }
 

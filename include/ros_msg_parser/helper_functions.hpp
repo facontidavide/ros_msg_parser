@@ -25,8 +25,8 @@
 #define ROS_INTROSPECTION_HELPER_H
 
 #include <functional>
-#include <ros_msg_parser/utils/variant.hpp>
-#include <ros_msg_parser/utils/span.hpp>
+#include "ros_msg_parser/utils/variant.hpp"
+#include "nonstd/span.hpp"
 
 namespace RosMsgParser{
 
@@ -131,14 +131,9 @@ inline Variant ReadFromBufferToVariant(BuiltinType id, const Span<const uint8_t>
   case FLOAT32:  return ReadFromBufferToVariant<float>(buffer,offset);
   case FLOAT64:  return ReadFromBufferToVariant<double>(buffer,offset);
 
+  case DURATION:
   case TIME: {
-    ros::Time tmp;
-    ReadFromBuffer( buffer, offset, tmp.sec );
-    ReadFromBuffer( buffer, offset, tmp.nsec );
-    return tmp;
-  }
-  case DURATION: {
-    ros::Duration tmp;
+    RosMsgParser::Time tmp;
     ReadFromBuffer( buffer, offset, tmp.sec );
     ReadFromBuffer( buffer, offset, tmp.nsec );
     return tmp;

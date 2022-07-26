@@ -25,12 +25,16 @@
 
 #include <vector>
 #include <map>
+#include <memory>
+#include <unordered_map>
 #include <iostream>
 #include "ros_msg_parser/ros_type.hpp"
 
 namespace RosMsgParser{
 
 class ROSMessage;
+
+using RosMessageLibrary = std::unordered_map<std::string, std::shared_ptr<ROSMessage>>;
 
 class Parser;
 
@@ -53,6 +57,8 @@ public:
 
   const ROSType& type() const { return _type; }
 
+  void changeType(const ROSType& type) { _type = type; }
+
   /// True if field is a constant in message definition
   bool isConstant() const {
     return _value.size() != 0;
@@ -70,13 +76,24 @@ public:
 
   friend class ROSMessage;
 
+  const ROSMessage* getMessagePtr(const RosMessageLibrary& library) const;
+
 protected:
   std::string _fieldname;
   ROSType     _type;
   std::string _value;
   bool _is_array;
   int _array_size;
+
+  mutable const RosMessageLibrary* _cache_library = nullptr;
+  mutable ROSMessage* _cache_message = nullptr;
 };
+
+void TrimStringLeft(std::string& s);
+
+void TrimStringRight(std::string& s);
+
+void TrimString(std::string& s);
 
 }
 

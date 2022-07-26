@@ -21,6 +21,7 @@
 *   SOFTWARE.
 */
 
+#include <assert.h>
 #include "ros_msg_parser/ros_type.hpp"
 #include "ros_msg_parser/helper_functions.hpp"
 
@@ -43,9 +44,9 @@ ROSType::ROSType(const std::string& name):
     _msg_name = _base_name;
   }
   else{
-    _pkg_name = boost::string_ref( _base_name.data(), pos);
+    _pkg_name = std::string_view( _base_name.data(), pos);
     pos++;
-    _msg_name = boost::string_ref( _base_name.data() + pos, _base_name.size() - pos);
+    _msg_name = std::string_view( _base_name.data() + pos, _base_name.size() - pos);
   }
 
   _id   = toBuiltinType( _msg_name );
@@ -56,9 +57,9 @@ ROSType& ROSType::operator= (const ROSType &other)
 {
     int pos = other._pkg_name.size();
     _base_name = other._base_name;
-    _pkg_name = boost::string_ref( _base_name.data(), pos);
+    _pkg_name = std::string_view( _base_name.data(), pos);
     if( pos > 0) pos++;
-    _msg_name = boost::string_ref( _base_name.data() + pos, _base_name.size() - pos);
+    _msg_name = std::string_view( _base_name.data() + pos, _base_name.size() - pos);
     _id   = other._id;
     _hash = other._hash;
     return *this;
@@ -68,24 +69,24 @@ ROSType& ROSType::operator= (ROSType &&other)
 {
     int pos = other._pkg_name.size();
     _base_name = std::move( other._base_name );
-    _pkg_name = boost::string_ref( _base_name.data(), pos);
+    _pkg_name = std::string_view( _base_name.data(), pos);
     if( pos > 0) pos++;
-    _msg_name = boost::string_ref( _base_name.data() + pos, _base_name.size() - pos);
+    _msg_name = std::string_view( _base_name.data() + pos, _base_name.size() - pos);
     _id   = other._id;
     _hash = other._hash;
     return *this;
 }
 
 
-void ROSType::setPkgName(boost::string_ref new_pkg)
+void ROSType::setPkgName(std::string_view new_pkg)
 {
   assert(_pkg_name.size() == 0);
 
-  int pos = new_pkg.size();
-  _base_name = new_pkg.to_string() + "/" + _base_name;
+  size_t pos = new_pkg.size();
+  _base_name = std::string(new_pkg) + "/" + _base_name;
 
-  _pkg_name = boost::string_ref( _base_name.data(), pos++);
-  _msg_name = boost::string_ref( _base_name.data() + pos, _base_name.size() - pos);
+  _pkg_name = std::string_view( _base_name.data(), pos++);
+  _msg_name = std::string_view( _base_name.data() + pos, _base_name.size() - pos);
 
   _hash = std::hash<std::string>{}( _base_name );
 }

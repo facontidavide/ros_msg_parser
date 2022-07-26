@@ -35,13 +35,13 @@
 #ifndef VARIANT_H
 #define VARIANT_H
 
+#include <string.h>
 #include <type_traits>
 #include <limits>
-#include <boost/utility/string_ref.hpp>
+#include <string_view>
 #include "ros_msg_parser/builtin_types.hpp"
 #include "ros_msg_parser/details/exceptions.hpp"
 #include "ros_msg_parser/details/conversion_impl.hpp"
-
 
 namespace RosMsgParser
 {
@@ -142,10 +142,9 @@ inline Variant::Variant(const T& value):
   _type(OTHER)
 {
   static_assert (std::numeric_limits<T>::is_specialized ||
-                 std::is_same<T, ros::Time>::value ||
-                 std::is_same<T, boost::string_ref>::value ||
-                 std::is_same<T, std::string>::value ||
-                 std::is_same<T, ros::Duration>::value
+                 std::is_same<T, RosMsgParser::Time>::value ||
+                 std::is_same<T, std::string_view>::value ||
+                 std::is_same<T, std::string>::value
                  , "not a valid type");
 
   _storage.raw_string = (nullptr);
@@ -176,8 +175,7 @@ inline const uint8_t* Variant::getRawStorage() const {
 template<typename T> inline T Variant::extract( ) const
 {
   static_assert (std::numeric_limits<T>::is_specialized ||
-                 std::is_same<T, ros::Time>::value ||
-                 std::is_same<T, ros::Duration>::value
+                 std::is_same<T, RosMsgParser::Time>::value
                  , "not a valid type");
 
   if( _type != RosMsgParser::getType<T>() )
@@ -187,7 +185,7 @@ template<typename T> inline T Variant::extract( ) const
   return * reinterpret_cast<const T*>( &_storage.raw_data[0] );
 }
 
-template<> inline boost::string_ref Variant::extract( ) const
+template<> inline std::string_view Variant::extract( ) const
 {
 
   if( _type != STRING )
@@ -196,7 +194,7 @@ template<> inline boost::string_ref Variant::extract( ) const
   }
   const uint32_t size = *(reinterpret_cast<const uint32_t*>( &_storage.raw_string[0] ));
   char* data = static_cast<char*>(&_storage.raw_string[4]);
-  return boost::string_ref(data, size);
+  return std::string_view(data, size);
 }
 
 template<> inline std::string Variant::extract( ) const
@@ -215,8 +213,7 @@ template<> inline std::string Variant::extract( ) const
 template <typename T> inline void Variant::assign(const T& value)
 {
   static_assert (std::numeric_limits<T>::is_specialized ||
-                 std::is_same<T, ros::Time>::value ||
-                 std::is_same<T, ros::Duration>::value
+                 std::is_same<T, RosMsgParser::Time>::value
                  , "not a valid type");
 
   clearStringIfNecessary();
@@ -246,7 +243,7 @@ inline void Variant::assign(const char* buffer, size_t size)
 
 
 
-template <> inline void Variant::assign(const boost::string_ref& value)
+template <> inline void Variant::assign(const std::string_view& value)
 {
   assign( value.data(), value.size() );
 }
@@ -261,8 +258,7 @@ template <> inline void Variant::assign(const std::string& value)
 template<typename DST> inline DST Variant::convert() const
 {
   static_assert (std::numeric_limits<DST>::is_specialized ||
-                 std::is_same<DST, ros::Time>::value ||
-                 std::is_same<DST, ros::Duration>::value
+                 std::is_same<DST, RosMsgParser::Time>::value
                  , "not a valid type");
 
   using namespace RosMsgParser::details;
@@ -335,13 +331,9 @@ template<> inline double Variant::convert() const
     throw TypeException("String will not be converted to a double implicitly");
   }break;
 
-  case DURATION: {
-    ros::Duration tmp =  extract<ros::Duration>();
-    target = tmp.toSec();
-  }break;
-
+  case DURATION:
   case TIME: {
-    ros::Time tmp =  extract<ros::Time>();
+    RosMsgParser::Time tmp =  extract<RosMsgParser::Time>();
     target = tmp.toSec();
   }break;
 
@@ -351,22 +343,13 @@ template<> inline double Variant::convert() const
   return  target;
 }
 
-template<> inline ros::Time Variant::convert() const
+template<> inline RosMsgParser::Time Variant::convert() const
 {
   if(  _type != TIME )
   {
-     throw TypeException("Variant::convert -> cannot convert ros::Time");
+     throw TypeException("Variant::convert -> cannot convert RosMsgParser::Time");
   }
-  return extract<ros::Time>();
-}
-
-template<> inline ros::Duration Variant::convert() const
-{
-  if(  _type != DURATION )
-  {
-     throw TypeException("Variant::convert -> cannot convert ros::Duration");
-  }
-  return extract<ros::Duration>();
+  return extract<RosMsgParser::Time>();
 }
 
 

@@ -27,7 +27,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <ros/ros.h>
 #include <unordered_map>
 
 namespace RosMsgParser{
@@ -102,6 +101,18 @@ template <typename T> BuiltinType getType()
     return OTHER;
 }
 
+struct Time
+{
+  uint32_t sec;
+  uint32_t nsec;
+
+  double toSec()
+  {
+    return double(sec) + double(nsec)*1e-9;
+  }
+};
+
+
 template <> inline BuiltinType getType<bool>()  {  return BOOL; }
 
 template <> inline BuiltinType getType<char>()           {  return CHAR; }
@@ -121,8 +132,7 @@ template <> inline BuiltinType getType<double>() {  return FLOAT64; }
 
 template <> inline BuiltinType getType<std::string>() {  return STRING; }
 
-template <> inline BuiltinType getType<ros::Time>()     {  return TIME; }
-template <> inline BuiltinType getType<ros::Duration>() {  return DURATION; }
+template <> inline BuiltinType getType<RosMsgParser::Time>()     {  return TIME; }
 
 }
 

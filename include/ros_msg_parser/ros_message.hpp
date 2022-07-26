@@ -24,35 +24,31 @@
 #ifndef ROS_INTROSPECTION_ROSMESSAGE_H
 #define ROS_INTROSPECTION_ROSMESSAGE_H
 
+#include <unordered_map>
 #include "ros_msg_parser/utils/tree.hpp"
 #include "ros_msg_parser/ros_field.hpp"
 
-namespace RosMsgParser{
+namespace RosMsgParser
+{
 
-
-class ROSMessage{
+class ROSMessage
+{
 public:
+  using Ptr = std::shared_ptr<ROSMessage>;
 
   /// This constructor does most of the work in terms of parsing.
   /// It uses the message definition to extract fields and types.
   ROSMessage(const std::string& msg_def );
 
-  /**
-   * @brief Get field by index.
-   */
-  const ROSField& field(size_t index) const { return _fields[index]; }
+  const ROSField& field(size_t i) const { return _fields[i]; }
 
-  /**
-   * @brief Vector of fields.
-   * @return
-   */
   const std::vector<ROSField>& fields() const { return _fields; }
+
+  std::vector<ROSField>& fields() { return _fields; }
 
   const ROSType& type() const { return _type; }
 
-  void mutateType(const ROSType& new_type ) { _type = new_type; }
-
-  void updateMissingPkgNames(const std::vector<const ROSType *> &all_types);
+  void setType(const ROSType& new_type ) { _type = new_type; }
 
 private:
 
@@ -87,6 +83,12 @@ inline std::ostream& operator<<(std::ostream &os, const ROSMessage* msg )
   os << msg->type();
   return os;
 }
+
+std::vector<std::string> SplitMultipleMessageDefinitions(const std::string& multi_def);
+
+void AddMessageDefinitionsToLibrary(const std::string& multi_def,
+                                    RosMessageLibrary& library,
+                                    const std::string &type_name);
 
 
 }

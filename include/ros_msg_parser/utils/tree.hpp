@@ -40,9 +40,7 @@
 #include <deque>
 #include <iostream>
 #include <memory>
-#include <boost/container/stable_vector.hpp>
-#include <boost/noncopyable.hpp>
-
+#include <SmallVector/SmallVector.h>
 
 namespace RosMsgParser {
 
