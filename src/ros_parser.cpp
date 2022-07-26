@@ -62,7 +62,7 @@ ROSMessage::Ptr Parser::getMessageByType(const ROSType& type) const
       return msg;
     }
   }
-  return nullptr;
+  return {};
 }
 
 template <typename Container>
@@ -76,21 +76,21 @@ inline void ExpandVectorIfNecessary(Container& container, size_t new_size)
 }
 
 bool Parser::deserialize(Span<const uint8_t> buffer,
-                         FlatMessage* flat_container) const
+                         FlatMessage* flat_container,
+                         Deserializer* deserializer) const
 {
+  deserializer->init(buffer);
 
- /* bool entire_message_parse = true;
+  bool entire_message_parse = true;
 
   size_t value_index = 0;
   size_t name_index = 0;
   size_t blob_index = 0;
   size_t blob_storage_index = 0;
 
-  size_t buffer_offset = 0;
+  std::function<void(const ROSMessage*, FieldLeaf, bool)> deserializeImpl;
 
-  std::function<void(const ROSMessage*, FieldTreeLeaf, bool)> deserializeImpl;
-
-  deserializeImpl = [&](const ROSMessage* msg, FieldTreeLeaf tree_leaf, bool store)
+  deserializeImpl = [&](const ROSMessage* msg, FieldLeaf tree_leaf, bool store)
   {
     size_t index_s = 0;
     size_t index_m = 0;
@@ -106,12 +106,12 @@ bool Parser::deserialize(Span<const uint8_t> buffer,
       const ROSType& field_type = field.type();
 
       auto new_tree_leaf = tree_leaf;
-      new_tree_leaf.node_ptr = tree_leaf.node_ptr->child(index_s);
+      new_tree_leaf.node = tree_leaf.node->child(index_s);
 
       int32_t array_size = field.arraySize();
       if (array_size == -1)
       {
-        ReadFromBuffer(buffer, buffer_offset, array_size);
+        array_size = deserializer->deserializeUInt32();
       }
       if (field.isArray())
       {
@@ -142,13 +142,13 @@ bool Parser::deserialize(Span<const uint8_t> buffer,
       {
         ExpandVectorIfNecessary(flat_container->blob, blob_index);
 
-        if (buffer_offset + array_size > static_cast<std::size_t>(buffer.size()))
+        if ( array_size > deserializer->bytesLeft() )
         {
           throw std::runtime_error("Buffer overrun in deserializeIntoFlatContainer (blob)");
         }
         if (DO_STORE)
         {
-          flat_container->blob[blob_index].first = new_tree_leaf;
+          flat_container->blob[blob_index].first = FieldsVector(new_tree_leaf);
           auto& blob = flat_container->blob[blob_index].second;
           blob_index++;
 
@@ -158,17 +158,17 @@ bool Parser::deserialize(Span<const uint8_t> buffer,
 
             auto& storage = flat_container->blob_storage[blob_storage_index];
             storage.resize(array_size);
-            std::memcpy(storage.data(), &buffer[buffer_offset], array_size);
+            std::memcpy(storage.data(), deserializer->getCurrentPtr(), array_size);
             blob_storage_index++;
 
             blob = Span<const uint8_t>(storage.data(), storage.size());
           }
           else
           {
-            blob = Span<const uint8_t>(&buffer[buffer_offset], array_size);
+            blob = Span<const uint8_t>(deserializer->getCurrentPtr(), array_size);
           }
         }
-        buffer_offset += array_size;
+        deserializer->jump( array_size );
       }
       else  // NOT a BLOB
       {
@@ -189,36 +189,24 @@ bool Parser::deserialize(Span<const uint8_t> buffer,
           {
             ExpandVectorIfNecessary(flat_container->name, name_index);
 
-            uint32_t string_size = 0;
-            ReadFromBuffer(buffer, buffer_offset, string_size);
-
-            if (buffer_offset + string_size > static_cast<std::size_t>(buffer.size()))
-            {
-              throw std::runtime_error("Buffer overrun in RosMsgParser::ReadFromBuffer");
-            }
-
             if (DO_STORE_ARRAY)
             {
-              if (string_size == 0)
-              {
-                // corner case, when there is an empty string at the end of the message
-                flat_container->name[name_index].second.clear();
-              }
-              else
-              {
-                const char* buffer_ptr = reinterpret_cast<const char*>(buffer.data() + buffer_offset);
-                flat_container->name[name_index].second.assign(buffer_ptr, string_size);
-              }
-              flat_container->name[name_index].first = new_tree_leaf;
+              flat_container->name[name_index].first = FieldsVector(new_tree_leaf);
+              std::string& str = flat_container->name[name_index].second;
+              deserializer->deserializeString( str );
               name_index++;
             }
-            buffer_offset += string_size;
+            else
+            {
+              uint32_t string_size = deserializer->deserializeUInt32();
+              deserializer->jump(string_size);
+            }
           }
           else if (field_type.isBuiltin())
           {
             ExpandVectorIfNecessary(flat_container->value, value_index);
 
-            Variant var = ReadFromBufferToVariant(field_type.typeID(), buffer, buffer_offset);
+            Variant var = deserializer->deserialize(field_type.typeID());
             if (DO_STORE_ARRAY)
             {
               flat_container->value[value_index] = std::make_pair(new_tree_leaf, std::move(var));
@@ -227,8 +215,8 @@ bool Parser::deserialize(Span<const uint8_t> buffer,
           }
           else
           {  // field_type.typeID() == OTHER
-
-            deserializeImpl(msg_node->child(index_m), new_tree_leaf, DO_STORE_ARRAY);
+            auto msg_node = field.getMessagePtr( _schema->msg_library );
+            deserializeImpl(msg_node.get(), new_tree_leaf, DO_STORE_ARRAY);
           }
         }  // end for array_size
       }
@@ -244,28 +232,18 @@ bool Parser::deserialize(Span<const uint8_t> buffer,
   // pass the shared_ptr
   flat_container->schema = _schema;
 
-  FieldTreeLeaf rootnode;
-  rootnode.node_ptr = _schema->field_tree.croot();
+  FieldLeaf rootnode;
+  rootnode.node = _schema->field_tree.croot();
+  auto root_msg = _schema->field_tree.croot()->value()->getMessagePtr( _schema->msg_library );
 
-  deserializeImpl(_schema->field_tree.croot(), rootnode, true);
+  deserializeImpl(root_msg.get(), rootnode, true);
 
   flat_container->name.resize(name_index);
   flat_container->value.resize(value_index);
   flat_container->blob.resize(blob_index);
   flat_container->blob_storage.resize(blob_storage_index);
 
-  if (buffer_offset != static_cast<std::size_t>(buffer.size()))
-  {
-    char msg_buff[1000];
-    sprintf(msg_buff,
-            "buildRosFlatType: There was an error parsing the buffer.\n"
-            "Size %d != %d, while parsing [%s]",
-            (int)buffer_offset, (int)buffer.size(), _topic_name.c_str());
-
-    throw std::runtime_error(msg_buff);
-  }
-  return entire_message_parse;*/
- return true;
+  return entire_message_parse;
 }
 
 
@@ -281,45 +259,6 @@ void CreateRenamedValues(const FlatMessage& flat_msg, RenamedValues& renamed)
   }*/
 }
 
-void ParsersCollection::registerParser(const std::string& topic_name, const ROSType& msg_type,
-                                       const std::string& definition)
-{
-  auto it = _pack.find(topic_name);
-  if (it == _pack.end())
-  {
-    Parser parser(topic_name, msg_type, definition);
-    CachedPack pack = { std::move(parser), {} };
-    _pack.insert({ topic_name, std::move(pack) });
-  }
-}
 
-const Parser* ParsersCollection::getParser(const std::string& topic_name) const
-{
-  auto it = _pack.find(topic_name);
-  if (it != _pack.end())
-  {
-    return &it->second.parser;
-  }
-  return nullptr;
-}
-
-const ParsersCollection::DeserializedMsg* ParsersCollection::deserialize(const std::string& topic_name,
-                                                                         Span<const uint8_t> buffer)
-{
-  auto it = _pack.find(topic_name);
-  if (it != _pack.end())
-  {
-    CachedPack& pack = it->second;
-    Parser& parser = pack.parser;
-    FlatMessage& flat_msg = pack.msg.flat_msg;
-    RenamedValues& renamed = pack.msg.renamed_vals;
-
-    parser.deserialize(buffer, &flat_msg);
-    CreateRenamedValues(flat_msg, renamed);
-
-    return &pack.msg;
-  }
-  return nullptr;
-}
 
 }  // namespace RosMsgParser

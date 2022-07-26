@@ -13,9 +13,12 @@ namespace RosMsgParser
 class Deserializer
 {
 public:
-  Deserializer( Span<uint8_t> buffer ):
-    _buffer(buffer)
-  {}
+
+  virtual void init(Span<const uint8_t> buffer)
+  {
+    _buffer = buffer;
+    reset();
+  }
 
   virtual ~Deserializer() = default;
 
@@ -28,24 +31,34 @@ public:
   // deserialize the current pointer into a string
   virtual void deserializeString(std::string& out) = 0;
 
+  virtual uint32_t deserializeUInt32() = 0;
+
   virtual const uint8_t* getCurrentPtr() const = 0;
+
+  virtual size_t bytesLeft() const
+  {
+    return _buffer.size() - ( getCurrentPtr() - _buffer.data() );
+  }
 
   // reset the pointer to beginning of buffer
   virtual void reset() = 0;
 
 protected:
-  Span<uint8_t> _buffer;
+  Span<const uint8_t> _buffer;
 };
 
 // Sopecialization od deserializer that works with ROS1
 class ROS_Deserializer : public Deserializer
 {
 public:
-  ROS_Deserializer( Span<uint8_t> buffer );
 
   virtual Variant deserialize(BuiltinType type) override;
 
   virtual void deserializeString(std::string& dst) override;
+
+  virtual uint32_t deserializeUInt32() override;
+
+  virtual const uint8_t* getCurrentPtr() const override;
 
   void jump(size_t bytes) override;
 

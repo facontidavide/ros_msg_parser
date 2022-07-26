@@ -3,12 +3,6 @@
 namespace RosMsgParser
 {
 
-ROS_Deserializer::ROS_Deserializer(Span<uint8_t> buffer):
-  Deserializer(buffer)
-{
-  reset();
-}
-
 Variant ROS_Deserializer::deserialize(BuiltinType type)
 {
   switch(type)
@@ -63,6 +57,16 @@ void ROS_Deserializer::deserializeString(std::string &dst)
 
   _ptr += string_size;
   _bytes_left -= string_size;
+}
+
+uint32_t ROS_Deserializer::deserializeUInt32()
+{
+  return deserialize<uint32_t>();
+}
+
+const uint8_t *ROS_Deserializer::getCurrentPtr() const
+{
+  return _ptr;
 }
 
 void ROS_Deserializer::jump(size_t bytes)

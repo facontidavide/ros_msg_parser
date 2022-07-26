@@ -23,44 +23,45 @@
 
 #include "ros_msg_parser/stringtree_leaf.hpp"
 
-namespace RosMsgParser{
-
-
-bool FieldTreeLeaf::toStr(std::string& out) const
+namespace RosMsgParser
 {
-  const FieldTreeNode* leaf_node = this->node_ptr;
-  if( !leaf_node ){
-    return false;
-  }
 
-  size_t total_size = 0;
-  SmallVector<const ROSField*, 16> field_chain;
-
-  while(leaf_node)
+FieldsVector::FieldsVector(const FieldLeaf& leaf)
+{
+  auto node = leaf.node;
+  while(node && node->value())
   {
-    const ROSField* field = leaf_node->value();
-    field_chain.push_back( field );
+    fields.push_back( node->value() );
+    node = node->parent();
+  }
+  std::reverse(fields.begin(), fields.end());
+  index_array = leaf.index_array;
+}
 
+void FieldsVector::toStr(std::string& out) const
+{
+  size_t total_size = 0;
+  for(  const ROSField* field: fields)
+  {
     total_size += field->name().size() + 1;
     if (field->isArray())
     {
-      total_size += 5;  // super conservative (9999)
+      total_size += (2 + 4);  // super conservative (9999)
     }
-    leaf_node = leaf_node->parent();
-  };
+  }
 
   out.resize( total_size );
   char* buffer = static_cast<char*>(&out[0]);
-  std::reverse(field_chain.begin(),  field_chain.end() );
 
   size_t array_count = 0;
   size_t offset = 0;
 
-  for(  const ROSField* field: field_chain)
+  for(  const ROSField* field: fields)
   {
     const std::string& str = field->name();
-    bool is_root = ( field == field_chain.front() );
-    if( !is_root ){
+    bool is_root = ( field == fields.front() );
+    if( !is_root )
+    {
       buffer[offset++] = '/';
     }
     std::memcpy( &buffer[offset], str.data(), str.size() );
@@ -68,72 +69,74 @@ bool FieldTreeLeaf::toStr(std::string& out) const
 
     if(!is_root && field->isArray())
     {
-      buffer[offset++] = '.';
-      offset += print_number(&buffer[offset], index_array[ array_count++ ] );
+      buffer[offset++] = '[';
+      if( array_count < index_array.size() )
+      {
+        offset += print_number(&buffer[offset], index_array[ array_count++ ] );
+      }
+      buffer[offset++] = ']';
     }
   }
   buffer[offset] = '\0';
   out.resize(offset);
-
-  return true;
 }
 
 
-void CreateStringFromTreeLeaf(const FieldTreeLeaf &leaf, bool skip_root, std::string& out)
-{
-  const FieldTreeNode* leaf_node = leaf.node_ptr;
-  if( !leaf_node ){
-      out.clear();
-      return ;
-  }
+//void CreateStringFromTreeLeaf(const FieldTreeLeaf &leaf, bool skip_root, std::string& out)
+//{
+//  const FieldTreeNode* leaf_node = leaf.node_ptr;
+//  if( !leaf_node ){
+//      out.clear();
+//      return ;
+//  }
 
-  SmallVector<const std::string*, 16> strings_chain;
+//  SmallVector<const std::string*, 16> strings_chain;
 
-  size_t total_size = 0;
+//  size_t total_size = 0;
 
-  while(leaf_node)
-  {
-    const auto& str = leaf_node->value()->name();
-    leaf_node = leaf_node->parent();
-    if( !( leaf_node == nullptr && skip_root) )
-    {
-        strings_chain.emplace_back( &str );
-        const size_t S = str.size();
-        if( S == 1 && str[0] == '#' )
-        {
-            total_size += 5; // super conservative
-        }
-        else{
-          total_size += S+1;
-        }
-    }
-  };
+//  while(leaf_node)
+//  {
+//    const auto& str = leaf_node->value()->name();
+//    leaf_node = leaf_node->parent();
+//    if( !( leaf_node == nullptr && skip_root) )
+//    {
+//        strings_chain.emplace_back( &str );
+//        const size_t S = str.size();
+//        if( S == 1 && str[0] == '#' )
+//        {
+//            total_size += 5; // super conservative
+//        }
+//        else{
+//          total_size += S+1;
+//        }
+//    }
+//  };
 
-  out.resize(total_size);
-  char* buffer = &out[0];
+//  out.resize(total_size);
+//  char* buffer = &out[0];
 
-  std::reverse(strings_chain.begin(),  strings_chain.end() );
+//  std::reverse(strings_chain.begin(),  strings_chain.end() );
 
-  size_t array_count = 0;
-  size_t offset = 0;
+//  size_t array_count = 0;
+//  size_t offset = 0;
 
-  for( const auto& str: strings_chain)
-  {
-    const size_t S = str->size();
-    if( S == 1 && (*str)[0] == '#' )
-    {
-      buffer[offset++] = '.';
-      offset += print_number(&buffer[offset], leaf.index_array[ array_count++ ] );
-    }
-    else{
-      if( str !=  strings_chain.front() ){
-        buffer[offset++] = '/';
-      }
-      std::memcpy( &buffer[offset], str->data(), S );
-      offset += S;
-    }
-  }
-  out.resize(offset);
-}
+//  for( const auto& str: strings_chain)
+//  {
+//    const size_t S = str->size();
+//    if( S == 1 && (*str)[0] == '#' )
+//    {
+//      buffer[offset++] = '.';
+//      offset += print_number(&buffer[offset], leaf.index_array[ array_count++ ] );
+//    }
+//    else{
+//      if( str !=  strings_chain.front() ){
+//        buffer[offset++] = '/';
+//      }
+//      std::memcpy( &buffer[offset], str->data(), S );
+//      offset += S;
+//    }
+//  }
+//  out.resize(offset);
+//}
 
 }

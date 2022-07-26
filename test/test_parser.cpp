@@ -130,9 +130,10 @@ TEST_CASE("Parser Composite ROS1") {
   {
     if(node->isLeaf())
     {
-      FieldTreeLeaf leaf;
-      leaf.node_ptr = node;
-      leaf_str.push_back( leaf.toStdString() );
+      FieldLeaf leaf;
+      leaf.node = node;
+      FieldsVector fields_vector( leaf );
+      leaf_str.push_back( fields_vector.toStdString() );
     }
     else{
       for(const auto& child_node: node->children())

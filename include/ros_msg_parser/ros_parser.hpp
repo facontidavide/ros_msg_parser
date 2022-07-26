@@ -29,8 +29,6 @@
 
 namespace RosMsgParser{
 
-using FieldsVector = SmallVector<const ROSField*, 8>;
-
 struct FlatMessage {
 
   std::shared_ptr<MessageSchema> schema;
@@ -138,12 +136,8 @@ public:
    *         skipped because an array has (size > max_array_size)
    */
   bool deserialize(Span<const uint8_t> buffer,
-                   FlatMessage* flat_output) const;
-
-  using DeserializeVisitor = std::function<void(FieldTreeLeaf leaf, Span<const uint8_t> buffer)>;
-
-  bool deserialize(Span<const uint8_t> buffer,
-                   const Deserializer* deserializer) const;
+                   FlatMessage* flat_output,
+                   Deserializer *deserializer) const;
 
   typedef std::function<void(const ROSType&, Span<uint8_t>&)> VisitingCallback;
 
@@ -191,30 +185,63 @@ typedef std::vector<std::pair<std::string, double> > RenamedValues;
 void CreateRenamedValues(const FlatMessage& flat_msg, RenamedValues& renamed);
 
 
+template <class DeserializerT>
 class ParsersCollection{
 
 public:
-  struct DeserializedMsg{
-    FlatMessage flat_msg;
-    RenamedValues renamed_vals;
-  };
+
+  ParsersCollection()
+  {
+    _deserializer = std::make_unique<DeserializerT>();
+  }
 
   void registerParser(const std::string& topic_name,
-                      const ROSType& msg_type, const std::string& definition);
+                      const ROSType& msg_type,
+                      const std::string& definition)
+  {
+    if (_pack.count(topic_name) == 0)
+    {
+      Parser parser(topic_name, msg_type, definition);
+      CachedPack pack = { std::move(parser), {} };
+      _pack.insert({ topic_name, std::move(pack) });
+    }
+  }
 
-  const Parser* getParser(const std::string& topic_name) const;
+  const Parser* getParser(const std::string& topic_name) const
+  {
+    auto it = _pack.find(topic_name);
+    if (it != _pack.end())
+    {
+      return &it->second.parser;
+    }
+    return nullptr;
+  }
 
-  const DeserializedMsg *deserialize(const std::string& topic_name,
-                                     Span<const uint8_t> buffer);
+  const FlatMessage *deserialize(const std::string& topic_name,
+                                 Span<const uint8_t> buffer)
+  {
+    auto it = _pack.find(topic_name);
+    if (it != _pack.end())
+    {
+      CachedPack& pack = it->second;
+      Parser& parser = pack.parser;
+
+      parser.deserialize(buffer, &pack.msg, _deserializer.get());
+      return &pack.msg;
+    }
+    return nullptr;
+  }
 
 private:
   struct CachedPack{
     Parser parser;
-    DeserializedMsg msg;
+    FlatMessage msg;
   };
   std::unordered_map<std::string, CachedPack> _pack;
   std::vector<uint8_t> _buffer;
+  std::unique_ptr<Deserializer> _deserializer;
 };
+
 
 
 }

@@ -60,10 +60,6 @@ inline int print_number(char* buffer, uint16_t value)
   }
 }
 
-
-template <typename T, size_t N>
-using SmallVector = llvm_vecsmall::SmallVector<T, N>;
-
 namespace RosMsgParser{
 
 /**
@@ -84,16 +80,23 @@ namespace RosMsgParser{
  * array_size will be equal to two and index_array will contain these numbers {2,3}
  *
  */
-struct FieldTreeLeaf{
+struct FieldLeaf
+{
+  const FieldTreeNode* node;
+  SmallVector<uint16_t, 4> index_array;
+};
 
-  FieldTreeLeaf();
+struct FieldsVector
+{
+  FieldsVector() = default;
 
-  const FieldTreeNode* node_ptr = nullptr;
+  FieldsVector(const FieldLeaf& leaf);
 
-  SmallVector<uint16_t,8> index_array;
+  SmallVector<const ROSField*, 8> fields;
+  SmallVector<uint16_t, 4> index_array;
 
   /// Utility functions to print the entire branch
-  bool toStr(std::string &destination) const;
+  void toStr(std::string &destination) const;
 
   std::string toStdString() const
   {
@@ -103,21 +106,15 @@ struct FieldTreeLeaf{
   }
 };
 
-void CreateStringFromTreeLeaf(const FieldTreeLeaf& leaf, bool skip_root, std::string &out);
-
 //---------------------------------
 
-inline std::ostream& operator<<(std::ostream &os, const FieldTreeLeaf& leaf )
+inline std::ostream& operator<<(std::ostream &os, const FieldsVector& leaf )
 {
   std::string dest;
   leaf.toStr(dest);
   os << dest;
   return os;
 }
-
-inline FieldTreeLeaf::FieldTreeLeaf(): node_ptr(nullptr)
-{  }
-
 
 
 }
