@@ -59,15 +59,12 @@ private:
 typedef details::TreeNode<const ROSField*> FieldTreeNode;
 typedef details::Tree<const ROSField*> FieldTree;
 
-typedef details::TreeNode<const ROSMessage*> MessageTreeNode;
-typedef details::Tree<const ROSMessage*> MessageTree;
-
 struct ROSMessageInfo
 {
   std::string topic_name;
   FieldTree   field_tree;
-  MessageTree message_tree;
-  std::vector<ROSMessage> type_list;
+  ROSMessage::Ptr root_msg;
+  RosMessageLibrary msg_library;
 };
 
 //------------------------------------------------
@@ -86,10 +83,11 @@ inline std::ostream& operator<<(std::ostream &os, const ROSMessage* msg )
 
 std::vector<std::string> SplitMultipleMessageDefinitions(const std::string& multi_def);
 
-void AddMessageDefinitionsToLibrary(const std::string& multi_def,
-                                    RosMessageLibrary& library,
-                                    const std::string &type_name);
+std::vector<ROSMessage::Ptr> AddMessageDefinitionsToLibrary(const std::string& multi_def,
+                                                            const std::string &type_name);
 
+ROSMessageInfo BuildMessageInfo(const std::string& topic_name,
+                                const std::vector<ROSMessage::Ptr>& parsed_msgs);
 
 }
 

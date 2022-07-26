@@ -27,9 +27,12 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include <boost/container/small_vector.hpp>
-#include <boost/container/static_vector.hpp>
+
+#include "SmallVector/SmallVector.h"
 #include "ros_msg_parser/ros_message.hpp"
+
+template <typename T, size_t N>
+using SmallVector = llvm_vecsmall::SmallVector<T, N>;
 
 namespace RosMsgParser{
 
@@ -55,9 +58,9 @@ struct FieldTreeLeaf{
 
   FieldTreeLeaf();
 
-  const FieldTreeNode* node_ptr;
+  const FieldTreeNode* node_ptr = nullptr;
 
-  boost::container::static_vector<uint16_t,8> index_array;
+  SmallVector<uint16_t,8> index_array;
 
   /// Utility functions to print the entire branch
   bool toStr(std::string &destination) const;

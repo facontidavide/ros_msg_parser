@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include "ros_msg_parser/ros_message.hpp"
+#include "ros_msg_parser/stringtree_leaf.hpp"
 
 const std::string vector_def =
   "# This represents a vector in free space. \n"
@@ -77,41 +78,86 @@ const std::string pose_stamped_def =
 
 TEST_CASE("Parser Composite") {
 
-  RosMessageLibrary library;
-  AddMessageDefinitionsToLibrary(pose_stamped_def,
-                                 library,
-                                 "geometry_msgs/PoseStamped");
+  auto msg_parsed=  AddMessageDefinitionsToLibrary(pose_stamped_def,
+                                                   "geometry_msgs/PoseStamped");
 
-  CHECK(library.size() == 5);
+  CHECK(msg_parsed.size() == 5);
 
-  auto pose_stamped = library["geometry_msgs/PoseStamped"];
-  auto header = library["std_msgs/Header"];
-  auto pose = library["geometry_msgs/Pose"];
-  auto point = library["geometry_msgs/Point"];
-  auto quaternion = library["geometry_msgs/Quaternion"];
+  auto pose_stamped = msg_parsed[0];
+  auto header = msg_parsed[1];
+  auto pose = msg_parsed[2];
+  auto point = msg_parsed[3];
+  auto quaternion = msg_parsed[4];
 
+  CHECK(pose_stamped->type().baseName() == "geometry_msgs/PoseStamped");
   CHECK(pose_stamped->fields().size() == 2);
   CHECK(pose_stamped->field(0).type().baseName() == "std_msgs/Header");
   CHECK(pose_stamped->field(1).type().baseName() == "geometry_msgs/Pose");
 
+  CHECK(header->type().baseName() == "std_msgs/Header");
   CHECK(header->fields().size() == 3);
   CHECK(header->field(0).type().baseName() == "uint32");
   CHECK(header->field(1).type().baseName() == "time");
   CHECK(header->field(2).type().baseName() == "string");
 
+  CHECK(pose->type().baseName() == "geometry_msgs/Pose");
   CHECK(pose->fields().size() == 2);
   CHECK(pose->field(0).type().baseName() == "geometry_msgs/Point");
   CHECK(pose->field(1).type().baseName() == "geometry_msgs/Quaternion");
 
+  CHECK(point->type().baseName() == "geometry_msgs/Point");
   CHECK(point->fields().size() == 3);
   CHECK(point->field(0).type().baseName() == "float64");
   CHECK(point->field(1).type().baseName() == "float64");
   CHECK(point->field(2).type().baseName() == "float64");
 
+  CHECK(quaternion->type().baseName() == "geometry_msgs/Quaternion");
   CHECK(quaternion->fields().size() == 4);
   CHECK(quaternion->field(0).type().baseName() == "float64");
   CHECK(quaternion->field(1).type().baseName() == "float64");
   CHECK(quaternion->field(2).type().baseName() == "float64");
   CHECK(quaternion->field(3).type().baseName() == "float64");
+
+  //--------------------------------------
+  ROSMessageInfo msg_info = BuildMessageInfo("pose_stamped", msg_parsed);
+
+  CHECK( msg_info.field_tree.root()->children().size() == 2 );
+
+  std::vector<std::string> leaf_str;
+
+  auto recursiveLeaf = std::function<void(const FieldTreeNode* node)>();
+  recursiveLeaf = [&](const FieldTreeNode* node)
+  {
+    if(node->isLeaf())
+    {
+      FieldTreeLeaf leaf;
+      leaf.node_ptr = node;
+      leaf_str.push_back( leaf.toStdString() );
+    }
+    else{
+      for(const auto& child_node: node->children())
+      {
+        recursiveLeaf(&child_node);
+      }
+    }
+  };
+  recursiveLeaf( msg_info.field_tree.root() );
+
+  CHECK( leaf_str.size() == 10);
+
+  size_t index = 0;
+  CHECK( leaf_str[index++] == "pose_stamped/header/seq");
+  CHECK( leaf_str[index++] == "pose_stamped/header/stamp");
+  CHECK( leaf_str[index++] == "pose_stamped/header/frame_id");
+
+  CHECK( leaf_str[index++] == "pose_stamped/pose/position/x");
+  CHECK( leaf_str[index++] == "pose_stamped/pose/position/y");
+  CHECK( leaf_str[index++] == "pose_stamped/pose/position/z");
+
+  CHECK( leaf_str[index++] == "pose_stamped/pose/orientation/x");
+  CHECK( leaf_str[index++] == "pose_stamped/pose/orientation/y");
+  CHECK( leaf_str[index++] == "pose_stamped/pose/orientation/z");
+  CHECK( leaf_str[index++] == "pose_stamped/pose/orientation/w");
+
 }
 

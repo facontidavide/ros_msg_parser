@@ -35,7 +35,7 @@ bool FieldTreeLeaf::toStr(std::string& out) const
   }
 
   size_t total_size = 0;
-  boost::container::static_vector<const ROSField*, 16> field_chain;
+  SmallVector<const ROSField*, 16> field_chain;
 
   while(leaf_node)
   {
@@ -88,7 +88,7 @@ void CreateStringFromTreeLeaf(const FieldTreeLeaf &leaf, bool skip_root, std::st
       return ;
   }
 
-  boost::container::static_vector<const std::string*, 16> strings_chain;
+  SmallVector<const std::string*, 16> strings_chain;
 
   size_t total_size = 0;
 

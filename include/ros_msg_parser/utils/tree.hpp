@@ -74,7 +74,7 @@ public:
   bool isLeaf() const { return _children.empty(); }
 
 private:
-  const TreeNode*   _parent;
+  const TreeNode*   _parent = nullptr;
   T                 _value;
   ChildrenVector    _children;
 };

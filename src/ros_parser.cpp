@@ -21,11 +21,6 @@
 *   SOFTWARE.
 */
 
-#include <boost/algorithm/string.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
-#include <boost/algorithm/string/regex.hpp>
 #include <functional>
 
 #include "ros_msg_parser/ros_parser.hpp"
@@ -45,7 +40,7 @@ void Parser::registerMessage(const std::string& definition)
   std::vector<std::string> split;
   std::vector<const ROSType*> all_types;
 
-  boost::split_regex(split, definition, msg_separation_regex);
+  std::split_regex(split, definition, msg_separation_regex);
 
   _message_info->type_list.reserve(split.size());
   _message_info->type_list.clear();

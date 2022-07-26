@@ -34,7 +34,7 @@ namespace RosMsgParser{
 
 class ROSMessage;
 
-using RosMessageLibrary = std::unordered_map<std::string, std::shared_ptr<ROSMessage>>;
+using RosMessageLibrary = std::unordered_map<ROSType, std::shared_ptr<ROSMessage>>;
 
 class Parser;
 
@@ -43,13 +43,10 @@ class Parser;
  * than a name / type pair.
  */
 class ROSField {
-protected:
-
-  ROSField(const ROSType& type, const std::string& name );
-
-  friend class RosMsgParser::Parser;
 
 public:
+
+  ROSField(const ROSType& type, const std::string& name );
 
   ROSField(const std::string& definition );
 
@@ -76,7 +73,7 @@ public:
 
   friend class ROSMessage;
 
-  const ROSMessage* getMessagePtr(const RosMessageLibrary& library) const;
+  std::shared_ptr<ROSMessage> getMessagePtr(const RosMessageLibrary& library) const;
 
 protected:
   std::string _fieldname;
@@ -86,7 +83,7 @@ protected:
   int _array_size;
 
   mutable const RosMessageLibrary* _cache_library = nullptr;
-  mutable ROSMessage* _cache_message = nullptr;
+  mutable std::shared_ptr<ROSMessage> _cache_message;
 };
 
 void TrimStringLeft(std::string& s);

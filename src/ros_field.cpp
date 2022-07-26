@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <regex>
 #include "ros_msg_parser/ros_field.hpp"
+#include "ros_msg_parser/ros_message.hpp"
 
 namespace RosMsgParser{
 
@@ -129,11 +130,11 @@ ROSField::ROSField(const std::string &definition):
   _value = value;
 }
 
-const ROSMessage *ROSField::getMessagePtr(const RosMessageLibrary &library) const
+std::shared_ptr<ROSMessage> ROSField::getMessagePtr(const RosMessageLibrary &library) const
 {
   if( _type.typeID() != BuiltinType::OTHER )
   {
-    return nullptr;
+    return {};
   }
   if( &library == _cache_library && _cache_message )
   {
@@ -145,7 +146,7 @@ const ROSMessage *ROSField::getMessagePtr(const RosMessageLibrary &library) cons
     return nullptr;
   }
   _cache_library = &library;
-  _cache_message = it->second.get();
+  _cache_message = it->second;
   return _cache_message;
 }
 

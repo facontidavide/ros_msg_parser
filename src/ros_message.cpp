@@ -39,14 +39,12 @@ ROSMessage::ROSMessage(const std::string &msg_def)
 
     // Skip empty line or one that is a comment
     if (std::regex_search( begin, end, what,
-                           std::regex("(^\\s*$|^\\s*#)")))
+                          std::regex("(^\\s*$|^\\s*#)")))
     {
       continue;
     }
 
-    // Trim start of line
-    line.erase(line.begin(), std::find_if(line.begin(), line.end(),
-      std::not1(std::ptr_fun<int, int>(std::isspace))));
+    TrimStringLeft(line);
 
     if( line.compare(0, 5, "MSG: ") == 0)
     {
@@ -84,14 +82,16 @@ std::vector<std::string> SplitMultipleMessageDefinitions(const std::string &mult
   return parts;
 }
 
-void AddMessageDefinitionsToLibrary(const std::string& multi_def,
-                                    RosMessageLibrary& library,
-                                    const std::string& type_name )
+std::vector<ROSMessage::Ptr> AddMessageDefinitionsToLibrary(
+  const std::string& multi_def,
+  const std::string& type_name )
 {
   auto parts = SplitMultipleMessageDefinitions(multi_def);
-  std::vector<ROSType> all_types;
+  std::vector<ROSType> known_type;
   std::vector<ROSMessage::Ptr> parsed_msgs;
 
+  // iterating in reverse to fill known_type in the right order
+  // i.e. with no missing dependencies
   for( int i = parts.size()-1; i>=0; i--)
   {
     auto msg = std::make_shared<ROSMessage>(parts[i]);
@@ -100,19 +100,13 @@ void AddMessageDefinitionsToLibrary(const std::string& multi_def,
       msg->setType( ROSType(type_name) );
     }
 
-    parsed_msgs.push_back( msg );
-    all_types.push_back( msg->type() );
-  }
-
-  // adjust types with undefined package type
-  for(const auto& msg: parsed_msgs)
-  {
+    // adjust types with undefined package type
     for (ROSField& field: msg->fields())
     {
       // if package name is missing, try to find msgName in the list of known_type
       if( field.type().pkgName().empty() )
       {
-        for (const ROSType& known_type: all_types)
+        for (const ROSType& known_type: known_type)
         {
           if( field.type().msgName() == known_type.msgName()  )
           {
@@ -122,12 +116,69 @@ void AddMessageDefinitionsToLibrary(const std::string& multi_def,
         }
       }
     }
+    // add to vector
+    parsed_msgs.push_back( msg );
+    known_type.push_back( msg->type() );
   }
 
-  for(const auto& msg: parsed_msgs)
+  std::reverse(parsed_msgs.begin(), parsed_msgs.end());
+  return parsed_msgs;
+}
+
+ROSMessageInfo BuildMessageInfo(const std::string &topic_name,
+                                const std::vector<ROSMessage::Ptr>& parsed_msgs)
+{
+  ROSMessageInfo info;
+  info.topic_name = topic_name;
+  info.root_msg = parsed_msgs.front();
+
+  for(const auto& msg: parsed_msgs )
   {
-    library.insert( {msg->type().baseName(), msg} );
+    info.msg_library.insert( {msg->type(), msg} );
   }
+
+  /// build field tree
+  std::function<void(ROSMessage::Ptr, FieldTreeNode*)> recursiveTreeCreator;
+
+  recursiveTreeCreator = [&](ROSMessage::Ptr msg, FieldTreeNode* field_node)
+  {
+    // note: should use reserve here, NOT resize
+    const size_t NUM_FIELDS = msg->fields().size();
+    field_node->children().reserve(NUM_FIELDS);
+
+    for (const ROSField& field : msg->fields())
+    {
+      if (field.isConstant())
+      {
+        continue;
+      }
+      // Let's add first a child to string_node
+      field_node->addChild(&field);
+      FieldTreeNode* new_string_node = &(field_node->children().back());
+
+      // builtin types will not trigger a recursion
+      if (field.type().isBuiltin() == false)
+      {
+        auto new_msg = field.getMessagePtr(info.msg_library);
+        if( !new_msg )
+        {
+          throw std::runtime_error("Missing ROSType in library");
+        }
+
+        recursiveTreeCreator(new_msg, new_string_node);
+
+      }
+    }    // end of for fields
+  };     // end of recursiveTreeCreator
+
+  // start recursion
+  auto root_filed = new ROSField( info.root_msg->type(), topic_name);
+
+  info.field_tree.root()->setValue( root_filed );
+
+  recursiveTreeCreator(info.root_msg, info.field_tree.root());
+
+  return info;
 }
 
 } // end namespace
