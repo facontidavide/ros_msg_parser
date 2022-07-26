@@ -26,7 +26,7 @@ void ParseAndDeserialize(const Message& sample, const std::string& topic_name)
   // A data structure that contains the deserialized information.
   // It is not meant to be human readable, but it is easy to process...
   FlatMessage flat_container;
-  parser.deserializeIntoFlatMsg( Span<uint8_t>(buffer),
+  parser.deserialize( Span<uint8_t>(buffer),
                                        &flat_container );
 
   // Print the data.

@@ -23,7 +23,6 @@
 
 #include <assert.h>
 #include "ros_msg_parser/ros_type.hpp"
-#include "ros_msg_parser/helper_functions.hpp"
 
 namespace RosMsgParser{
 

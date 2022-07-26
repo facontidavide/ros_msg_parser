@@ -27,10 +27,19 @@
 
 #include <stdint.h>
 #include <string>
+#include <iostream>
 #include <unordered_map>
+
+#include "ros_msg_parser/contrib/span.hpp"
+#include "ros_msg_parser/contrib/SmallVector.h"
 
 namespace RosMsgParser{
 
+template< class T>
+using Span = nonstd::span<T>;
+
+template< class T, size_t N>
+using SmallVector = llvm_vecsmall::SmallVector<T, N>;
 
 enum BuiltinType {
   BOOL , BYTE, CHAR,

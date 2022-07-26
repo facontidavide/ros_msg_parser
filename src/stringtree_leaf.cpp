@@ -22,7 +22,6 @@
 */
 
 #include "ros_msg_parser/stringtree_leaf.hpp"
-#include "ros_msg_parser/helper_functions.hpp"
 
 namespace RosMsgParser{
 

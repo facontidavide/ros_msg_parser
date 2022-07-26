@@ -28,10 +28,9 @@
 #include <map>
 #include <iostream>
 #include <functional>
-#include "ros_msg_parser/utils/variant.hpp"
+#include "ros_msg_parser/variant.hpp"
 
 namespace RosMsgParser{
-
 
 /**
  * @brief ROSType

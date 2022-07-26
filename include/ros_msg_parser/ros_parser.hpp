@@ -23,28 +23,28 @@
 #pragma once
 
 #include <unordered_set>
-#include <ros_msg_parser/stringtree_leaf.hpp>
-#include <ros_msg_parser/helper_functions.hpp>
+
+#include "ros_msg_parser/stringtree_leaf.hpp"
+#include "ros_msg_parser/deserializer.hpp"
 
 namespace RosMsgParser{
 
+using FieldsVector = SmallVector<const ROSField*, 8>;
+
 struct FlatMessage {
 
-  /// Tree that the FieldTreeLeaf(s) refer to.
   std::shared_ptr<MessageSchema> schema;
 
-  /// List of all those parsed fields that can be represented by a builtin value different from "string".
-  /// This list will be filled by the funtion buildRosFlatType.
-  std::vector< std::pair<FieldTreeLeaf, Variant> > value;
+  /// List of all those parsed fields that can be represented by a
+  /// builtin value different from "string".
+  std::vector< std::pair<FieldsVector, Variant> > value;
 
-  /// List of all those parsed fields that can be represented by a builtin value equal to "string".
-  /// This list will be filled by the funtion buildRosFlatType.
-  std::vector< std::pair<FieldTreeLeaf, std::string> > name;
+  /// List of all those parsed fields that can be represented by a "string".
+  std::vector< std::pair<FieldsVector, std::string> > name;
 
   /// Store "blobs", i.e all those fields which are vectors of BYTES (AKA uint8_t),
-  /// where the vector size is greater than the argument [max_array_size]
-  /// passed  to the function deserializeIntoFlatContainer
-  std::vector< std::pair<FieldTreeLeaf, Span<const uint8_t>>> blob;
+  /// where the vector size is greater than the argument [max_array_size].
+  std::vector< std::pair<FieldsVector, Span<const uint8_t>>> blob;
 
   std::vector<std::vector<uint8_t>> blob_storage;
 };
@@ -86,7 +86,7 @@ public:
     return _discard_large_array;
   }
 
-  size_t maxArraySizy() const
+  size_t maxArraySize() const
   {
     return _max_array_size;
   }
@@ -110,37 +110,40 @@ public:
   }
 
   /**
-   * @brief getMessageInfo provides some metadata amout a registered ROSMessage.
-   *
-   * @param msg_identifier String ID to identify the registered message (use registerMessageDefinition first).
-   * @return               Pointer to the instance or nullptr if not registered.
+   * @brief getSchema provides some metadata amout a registered ROSMessage.
    */
-  const std::shared_ptr<ROSMessageSchema> &getMessageInfo() const;
+  const std::shared_ptr<MessageSchema>& getSchema() const;
 
-  const ROSMessage* getMessageByType(const ROSType& type) const;
+  ROSMessage::Ptr getMessageByType(const ROSType& type) const;
 
   /**
-   * @brief deserializeIntoFlatContainer takes a raw buffer of memory and extract information from it.
+   * @brief deserializeIntoFlatContainer takes a raw buffer of memory
+   *  and extract information from it.
    *  This data is stored in two key/value vectors, FlatMessage::value and FlatMessage::name.
-   * It must be noted that the key type is FieldTreeLeaf. this type is not particularly user-friendly,
-   * but allows a much faster post-processing.
+   *  It must be noted that the key type is FieldsVector. This type is
+   *  not particularly user-friendly, but allows a much faster post-processing.
    *
-   * IMPORTANT: this approach is not meant to be used with use arrays such as maps, point clouds and images.
-   * It would require a ridicoulous amount of memory and, franckly, make little sense.
-   * For this reason the argument max_array_size is used.
+   * IMPORTANT: this approach is not meant to be used with use arrays such as maps,
+   * point clouds and images.For this reason the argument max_array_size is used.
    *
-   * This funtion is almost always followed by applyNameTransform, which provide a more human-readable
-   * key-value representation.
+   * This funtion is almost always followed by CreateRenamedValues,
+   * which provide a more human-readable key-value representation.
    *
-   * @param buffer           raw memory to be parsed.
-   * @param flat_container_output  output to store the result. It is recommended to reuse the same object multiple times to
-   *                               avoid memory allocations and speed up the parsing.
+   * @param buffer         raw memory to be parsed.
+   * @param flat_output    output to store the result. It is recommended to
+   *                       reuse the same object multiple times to
+   *                       avoid memory allocations and speed up the parsing.
    *
-   * return true if the entire message was parsed or false if parts of the message were
-   * skipped because an array has (size > max_array_size)
+   * @return true if the entire message was parsed or false if parts of the message were
+   *         skipped because an array has (size > max_array_size)
    */
-  bool deserializeIntoFlatMsg(Span<const uint8_t> buffer,
-                              FlatMessage* flat_container_output) const;
+  bool deserialize(Span<const uint8_t> buffer,
+                   FlatMessage* flat_output) const;
+
+  using DeserializeVisitor = std::function<void(FieldTreeLeaf leaf, Span<const uint8_t> buffer)>;
+
+  bool deserialize(Span<const uint8_t> buffer,
+                   const Deserializer* deserializer) const;
 
   typedef std::function<void(const ROSType&, Span<uint8_t>&)> VisitingCallback;
 
@@ -164,10 +167,8 @@ public:
   void setWarningsStream(std::ostream* output) { _global_warnings = output; }
 
 private:
-  void registerMessage(const std::string& definition);
 
-  std::shared_ptr<ROSMessageSchema> _message_info;
-
+  std::shared_ptr<MessageSchema> _schema;
 
   std::ostream* _global_warnings;
 
@@ -181,6 +182,8 @@ private:
   size_t _max_array_size;
   BlobPolicy _blob_policy;
   std::shared_ptr<ROSField> _dummy_root_field;
+
+  std::unique_ptr<Deserializer> _deserializer;
 };
 
 typedef std::vector<std::pair<std::string, double> > RenamedValues;

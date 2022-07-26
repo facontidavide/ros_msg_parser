@@ -24,7 +24,7 @@
 #include <functional>
 
 #include "ros_msg_parser/ros_parser.hpp"
-#include "ros_msg_parser/helper_functions.hpp"
+#include "ros_msg_parser/deserializer.hpp"
 
 namespace RosMsgParser
 {
@@ -33,84 +33,10 @@ inline bool operator==(const std::string& a, const std::string_view& b)
   return (a.size() == b.size() && std::strncmp(a.data(), b.data(), a.size()) == 0);
 }
 
-void Parser::registerMessage(const std::string& definition)
-{
-  const boost::regex msg_separation_regex("^\\s*=+\\n+");
-
-  std::vector<std::string> split;
-  std::vector<const ROSType*> all_types;
-
-  std::split_regex(split, definition, msg_separation_regex);
-
-  _message_info->type_list.reserve(split.size());
-  _message_info->type_list.clear();
-
-  for (size_t i = 0; i < split.size(); ++i)
-  {
-    ROSMessage msg(split[i]);
-    if (i == 0)
-    {
-      msg.setType(_msg_type);
-    }
-
-    _message_info->type_list.push_back(std::move(msg));
-    all_types.push_back(&(_message_info->type_list.back().type()));
-  }
-
-  for (ROSMessage& msg : _message_info->type_list)
-  {
-    msg.updateMissingPkgNames(all_types);
-  }
-  //------------------------------
-
-  std::function<void(const ROSMessage*, FieldTreeNode*, MessageTreeNode*)> recursiveTreeCreator;
-
-  recursiveTreeCreator = [&](const ROSMessage* msg_definition, FieldTreeNode* field_node, MessageTreeNode* msg_node) {
-    // note: should use reserve here, NOT resize
-    const size_t NUM_FIELDS = msg_definition->fields().size();
-
-    field_node->children().reserve(NUM_FIELDS);
-    msg_node->children().reserve(NUM_FIELDS);
-
-    for (const ROSField& field : msg_definition->fields())
-    {
-      if (field.isConstant())
-      {
-        continue;
-      }
-      // Let's add first a child to string_node
-      field_node->addChild(&field);
-      FieldTreeNode* new_string_node = &(field_node->children().back());
-
-      const ROSMessage* next_msg = nullptr;
-      // builtin types will not trigger a recursion
-      if (field.type().isBuiltin() == false)
-      {
-        next_msg = getMessageByType(field.type());
-        if (next_msg == nullptr)
-        {
-          throw std::runtime_error("This type was not registered ");
-        }
-        msg_node->addChild(next_msg);
-        MessageTreeNode* new_msg_node = &(msg_node->children().back());
-        recursiveTreeCreator(next_msg, new_string_node, new_msg_node);
-
-      }  // end of field.isConstant()
-    }    // end of for fields
-  };     // end of lambda
-
-  auto& first_msg_type = _message_info->type_list.front();
-  _message_info->message_tree.root()->setValue(&first_msg_type);
-  _message_info->field_tree.root()->setValue( _dummy_root_field.get() );
-
-  // start recursion
-  recursiveTreeCreator(&_message_info->type_list.front(), _message_info->field_tree.root(),
-                       _message_info->message_tree.root());
-}
-
-Parser::Parser(const std::string &topic_name, const ROSType &msg_type, const std::string &definition)
-  : _message_info( new ROSMessageSchema)
-  , _global_warnings(&std::cerr)
+Parser::Parser(const std::string &topic_name,
+               const ROSType &msg_type,
+               const std::string &definition)
+  : _global_warnings(&std::cerr)
   , _topic_name(topic_name)
   , _msg_type(msg_type)
   , _discard_large_array(DISCARD_LARGE_ARRAYS)
@@ -118,91 +44,25 @@ Parser::Parser(const std::string &topic_name, const ROSType &msg_type, const std
   , _blob_policy(STORE_BLOB_AS_COPY)
   , _dummy_root_field( new ROSField(_msg_type, topic_name) )
 {
-  registerMessage(definition);
+  auto parsed_msgs = ParseMessageDefinitions(definition, msg_type);
+  _schema = BuildMessageSchema(topic_name, parsed_msgs);
 }
 
-const std::shared_ptr<ROSMessageSchema>& Parser::getMessageInfo() const
+const std::shared_ptr<MessageSchema>& Parser::getSchema() const
 {
-  return _message_info;
+  return _schema;
 }
 
-const ROSMessage* Parser::getMessageByType(const ROSType& type) const
+ROSMessage::Ptr Parser::getMessageByType(const ROSType& type) const
 {
-  for (const ROSMessage& msg : _message_info->type_list)  // find in the list
+  for (const auto& [msg_type, msg] : _schema->msg_library)  // find in the list
   {
-    if (msg.type() == type)
+    if (msg_type == type)
     {
-      return &msg;
+      return msg;
     }
   }
   return nullptr;
-}
-
-void Parser::applyVisitorToBuffer(const ROSType& target_type, Span<uint8_t>& buffer,
-                                  Parser::VisitingCallback callback) const
-{
-  if (getMessageByType(target_type) == nullptr)
-  {
-    // you will not find it. Skip it;
-    return;
-  }
-
-  std::function<void(const MessageTreeNode*)> recursiveImpl;
-  size_t buffer_offset = 0;
-
-  recursiveImpl = [&](const MessageTreeNode* msg_node) {
-    const ROSMessage* msg_definition = msg_node->value();
-    const ROSType& msg_type = msg_definition->type();
-
-    const bool matching = (msg_type == target_type);
-
-    uint8_t* prev_buffer_ptr = buffer.data() + buffer_offset;
-    size_t prev_offset = buffer_offset;
-
-    size_t index_m = 0;
-
-    for (const ROSField& field : msg_definition->fields())
-    {
-      if (field.isConstant())
-        continue;
-
-      const ROSType& field_type = field.type();
-
-      int32_t array_size = field.arraySize();
-      if (array_size == -1)
-      {
-        ReadFromBuffer(buffer, buffer_offset, array_size);
-      }
-
-      //------------------------------------
-
-      if (field_type.isBuiltin())
-      {
-        for (int i = 0; i < array_size; i++)
-        {
-          // Skip
-          ReadFromBufferToVariant(field_type.typeID(), buffer, buffer_offset);
-        }
-      }
-      else
-      {
-        // field_type.typeID() == OTHER
-        for (int i = 0; i < array_size; i++)
-        {
-          recursiveImpl(msg_node->child(index_m));
-        }
-        index_m++;
-      }
-    }  // end for fields
-    if (matching)
-    {
-      Span<uint8_t> view(prev_buffer_ptr, buffer_offset - prev_offset);
-      callback(msg_type, view);
-    }
-  };  // end lambda
-
-  // start recursion
-  recursiveImpl(_message_info->message_tree.croot());
 }
 
 template <typename Container>
@@ -215,9 +75,11 @@ inline void ExpandVectorIfNecessary(Container& container, size_t new_size)
   }
 }
 
-bool Parser::deserializeIntoFlatMsg(Span<const uint8_t> buffer, FlatMessage* flat_container) const
+bool Parser::deserialize(Span<const uint8_t> buffer,
+                         FlatMessage* flat_container) const
 {
-  bool entire_message_parse = true;
+
+ /* bool entire_message_parse = true;
 
   size_t value_index = 0;
   size_t name_index = 0;
@@ -226,18 +88,20 @@ bool Parser::deserializeIntoFlatMsg(Span<const uint8_t> buffer, FlatMessage* fla
 
   size_t buffer_offset = 0;
 
-  std::function<void(const MessageTreeNode*, FieldTreeLeaf, bool)> deserializeImpl;
+  std::function<void(const ROSMessage*, FieldTreeLeaf, bool)> deserializeImpl;
 
-  deserializeImpl = [&](const MessageTreeNode* msg_node, FieldTreeLeaf tree_leaf, bool store) {
-    const ROSMessage* msg_definition = msg_node->value();
+  deserializeImpl = [&](const ROSMessage* msg, FieldTreeLeaf tree_leaf, bool store)
+  {
     size_t index_s = 0;
     size_t index_m = 0;
 
-    for (const ROSField& field : msg_definition->fields())
+    for (const ROSField& field : msg->fields())
     {
       bool DO_STORE = store;
       if (field.isConstant())
+      {
         continue;
+      }
 
       const ROSType& field_type = field.type();
 
@@ -378,12 +242,12 @@ bool Parser::deserializeIntoFlatMsg(Span<const uint8_t> buffer, FlatMessage* fla
   };   // end of lambda
 
   // pass the shared_ptr
-  flat_container->msg_info = _message_info;
+  flat_container->schema = _schema;
 
   FieldTreeLeaf rootnode;
-  rootnode.node_ptr = _message_info->field_tree.croot();
+  rootnode.node_ptr = _schema->field_tree.croot();
 
-  deserializeImpl(_message_info->message_tree.croot(), rootnode, true);
+  deserializeImpl(_schema->field_tree.croot(), rootnode, true);
 
   flat_container->name.resize(name_index);
   flat_container->value.resize(value_index);
@@ -400,20 +264,21 @@ bool Parser::deserializeIntoFlatMsg(Span<const uint8_t> buffer, FlatMessage* fla
 
     throw std::runtime_error(msg_buff);
   }
-  return entire_message_parse;
+  return entire_message_parse;*/
+ return true;
 }
 
 
 void CreateRenamedValues(const FlatMessage& flat_msg, RenamedValues& renamed)
 {
-  renamed.resize(flat_msg.value.size());
+/*  renamed.resize(flat_msg.value.size());
   for (size_t i = 0; i < flat_msg.value.size(); i++)
   {
     const auto& in = flat_msg.value[i];
     auto& out = renamed[i];
     in.first.toStr(out.first);
     out.second = in.second.convert<double>();
-  }
+  }*/
 }
 
 void ParsersCollection::registerParser(const std::string& topic_name, const ROSType& msg_type,
@@ -449,7 +314,7 @@ const ParsersCollection::DeserializedMsg* ParsersCollection::deserialize(const s
     FlatMessage& flat_msg = pack.msg.flat_msg;
     RenamedValues& renamed = pack.msg.renamed_vals;
 
-    parser.deserializeIntoFlatMsg(buffer, &flat_msg);
+    parser.deserialize(buffer, &flat_msg);
     CreateRenamedValues(flat_msg, renamed);
 
     return &pack.msg;

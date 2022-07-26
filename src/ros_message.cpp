@@ -84,7 +84,7 @@ std::vector<std::string> SplitMultipleMessageDefinitions(const std::string &mult
 
 std::vector<ROSMessage::Ptr> ParseMessageDefinitions(
   const std::string& multi_def,
-  const std::string& type_name )
+  const ROSType& type )
 {
   auto parts = SplitMultipleMessageDefinitions(multi_def);
   std::vector<ROSType> known_type;
@@ -95,9 +95,9 @@ std::vector<ROSMessage::Ptr> ParseMessageDefinitions(
   for( int i = parts.size()-1; i>=0; i--)
   {
     auto msg = std::make_shared<ROSMessage>(parts[i]);
-    if( i == 0 && !type_name.empty() )
+    if( i == 0 )
     {
-      msg->setType( ROSType(type_name) );
+      msg->setType( type );
     }
 
     // adjust types with undefined package type
@@ -125,16 +125,16 @@ std::vector<ROSMessage::Ptr> ParseMessageDefinitions(
   return parsed_msgs;
 }
 
-MessageSchema BuildMessageSchema(const std::string &topic_name,
+MessageSchema::Ptr BuildMessageSchema(const std::string &topic_name,
                                const std::vector<ROSMessage::Ptr>& parsed_msgs)
 {
-  MessageSchema info;
-  info.topic_name = topic_name;
-  info.root_msg = parsed_msgs.front();
+  auto schema = std::make_shared<MessageSchema>();
+  schema->topic_name = topic_name;
+  schema->root_msg = parsed_msgs.front();
 
   for(const auto& msg: parsed_msgs )
   {
-    info.msg_library.insert( {msg->type(), msg} );
+    schema->msg_library.insert( {msg->type(), msg} );
   }
 
   /// build field tree
@@ -159,7 +159,7 @@ MessageSchema BuildMessageSchema(const std::string &topic_name,
       // builtin types will not trigger a recursion
       if (field.type().isBuiltin() == false)
       {
-        auto new_msg = field.getMessagePtr(info.msg_library);
+        auto new_msg = field.getMessagePtr(schema->msg_library);
         if( !new_msg )
         {
           throw std::runtime_error("Missing ROSType in library");
@@ -172,12 +172,12 @@ MessageSchema BuildMessageSchema(const std::string &topic_name,
   };     // end of recursiveTreeCreator
 
   // build root and start recursion
-  auto root_field = new ROSField( info.root_msg->type(), topic_name);
-  info.field_tree.root()->setValue( root_field );
+  auto root_field = new ROSField( schema->root_msg->type(), topic_name);
+  schema->field_tree.root()->setValue( root_field );
 
-  recursiveTreeCreator(info.root_msg, info.field_tree.root());
+  recursiveTreeCreator(schema->root_msg, schema->field_tree.root());
 
-  return info;
+  return schema;
 }
 
 } // end namespace

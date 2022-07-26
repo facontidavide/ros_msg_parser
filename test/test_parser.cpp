@@ -76,10 +76,10 @@ const std::string pose_stamped_def =
   "float64 w\n"
   ;
 
-TEST_CASE("Parser Composite") {
+TEST_CASE("Parser Composite ROS1") {
 
   auto msg_parsed=  ParseMessageDefinitions(pose_stamped_def,
-                                            "geometry_msgs/PoseStamped");
+                                            ROSType("geometry_msgs/PoseStamped"));
 
   CHECK(msg_parsed.size() == 5);
 
@@ -119,9 +119,9 @@ TEST_CASE("Parser Composite") {
   CHECK(quaternion->field(3).type().baseName() == "float64");
 
   //--------------------------------------
-  MessageSchema msg_info = BuildMessageSchema("pose_stamped", msg_parsed);
+  MessageSchema::Ptr schema = BuildMessageSchema("pose_stamped", msg_parsed);
 
-  CHECK( msg_info.field_tree.root()->children().size() == 2 );
+  CHECK( schema->field_tree.root()->children().size() == 2 );
 
   std::vector<std::string> leaf_str;
 
@@ -141,7 +141,7 @@ TEST_CASE("Parser Composite") {
       }
     }
   };
-  recursiveLeaf( msg_info.field_tree.root() );
+  recursiveLeaf( schema->field_tree.root() );
 
   CHECK( leaf_str.size() == 10);
 

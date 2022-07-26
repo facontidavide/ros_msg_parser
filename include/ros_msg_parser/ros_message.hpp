@@ -25,7 +25,7 @@
 #define ROS_INTROSPECTION_ROSMESSAGE_H
 
 #include <unordered_map>
-#include "ros_msg_parser/utils/tree.hpp"
+#include "ros_msg_parser/tree.hpp"
 #include "ros_msg_parser/ros_field.hpp"
 
 namespace RosMsgParser
@@ -61,6 +61,8 @@ typedef details::Tree<const ROSField*> FieldTree;
 
 struct MessageSchema
 {
+  using Ptr = std::shared_ptr<MessageSchema>;
+
   std::string topic_name;
   FieldTree   field_tree;
   ROSMessage::Ptr root_msg;
@@ -82,9 +84,9 @@ inline std::ostream& operator<<(std::ostream &os, const ROSMessage* msg )
 }
 
 std::vector<ROSMessage::Ptr> ParseMessageDefinitions(const std::string& multi_def,
-                                                     const std::string &root_type_name);
+                                                     const ROSType &type);
 
-MessageSchema BuildMessageSchema(const std::string& topic_name,
+MessageSchema::Ptr BuildMessageSchema(const std::string& topic_name,
                                  const std::vector<ROSMessage::Ptr>& parsed_msgs);
 
 }

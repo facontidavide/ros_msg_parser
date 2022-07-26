@@ -40,7 +40,8 @@
 #include <deque>
 #include <iostream>
 #include <memory>
-#include <SmallVector/SmallVector.h>
+
+#include "ros_msg_parser/builtin_types.hpp"
 
 namespace RosMsgParser {
 

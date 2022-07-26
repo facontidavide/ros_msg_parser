@@ -28,8 +28,38 @@
 #include <map>
 #include <iostream>
 
-#include "SmallVector/SmallVector.h"
 #include "ros_msg_parser/ros_message.hpp"
+
+// Brutally faster for numbers below 100
+inline int print_number(char* buffer, uint16_t value)
+{
+  const char DIGITS[] =
+    "00010203040506070809"
+    "10111213141516171819"
+    "20212223242526272829"
+    "30313233343536373839"
+    "40414243444546474849"
+    "50515253545556575859"
+    "60616263646566676869"
+    "70717273747576777879"
+    "80818283848586878889"
+    "90919293949596979899";
+  if (value < 10)
+  {
+    buffer[0] = static_cast<char>('0' + value);
+    return 1;
+  }
+  else if (value < 100) {
+    value *= 2;
+    buffer[0] = DIGITS[ value ];
+    buffer[1] = DIGITS[ value+1 ];
+    return 2;
+  }
+  else{
+    return sprintf( buffer,"%d", value );
+  }
+}
+
 
 template <typename T, size_t N>
 using SmallVector = llvm_vecsmall::SmallVector<T, N>;
