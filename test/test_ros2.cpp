@@ -1,26 +1,27 @@
 #include "doctest.h"
 
-#include <sensor_msgs/JointState.h>
-#include <sensor_msgs/Image.h>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <sensor_msgs/msg/image.hpp>
 
 #include "ros_msg_parser/ros_parser.hpp"
-
-#include "ros_msg_parser/ros_utils/ros1_helpers.hpp"
+#include "ros_msg_parser/ros_utils/ros2_helpers.hpp"
 
 using namespace RosMsgParser;
 
-TEST_CASE("Parse ROS1 [JointState]")
+TEST_CASE("Parse ROS2 [JointState]")
 {
-  ParsersCollection<ROS_Deserializer> parser;
+  ParsersCollection<ROS2_Deserializer> parser;
+
+  const std::string topic_type = "sensor_msgs/JointState";
+
   parser.registerParser("joint_state",
-                        GetMessageType<sensor_msgs::JointState>(),
-                        GetMessageDefinition<sensor_msgs::JointState>());
+                        ROSType(topic_type),
+                        GetMessageDefinition(topic_type));
 
-  sensor_msgs::JointState joint_state;
+  sensor_msgs::msg::JointState joint_state;
 
-  joint_state.header.seq = 2016;
   joint_state.header.stamp.sec  = 1234;
-  joint_state.header.stamp.nsec = 567*1000*1000;
+  joint_state.header.stamp.nanosec = 567*1000*1000;
   joint_state.header.frame_id = "pippo";
 
   joint_state.name.resize( 3 );
@@ -41,7 +42,7 @@ TEST_CASE("Parse ROS1 [JointState]")
     joint_state.effort[i]= 50+i;
   }
 
-  std::vector<uint8_t> buffer = BuildMessageBuffer(joint_state);
+  std::vector<uint8_t> buffer = BuildMessageBuffer(joint_state, topic_type);
 
   auto flat_container = parser.deserialize("joint_state", Span<uint8_t>(buffer) );
 
@@ -53,14 +54,10 @@ TEST_CASE("Parse ROS1 [JointState]")
     std::cout << it.first << " >> " << it.second << std::endl;
   }
 
-  CHECK( flat_container->value[0].first.toStdString() == ("joint_state/header/seq"));
-  CHECK( flat_container->value[0].second.convert<int>() ==  2016 );
-
-  CHECK( flat_container->value[1].first.toStdString() == ("joint_state/header/stamp"));
-  CHECK( flat_container->value[1].second.convert<double>() == 1234.567  );
-  auto time = flat_container->value[1].second.convert<Time>();
-  CHECK( time.sec == joint_state.header.stamp.sec  );
-  CHECK( time.nsec == joint_state.header.stamp.nsec  );
+  CHECK( flat_container->value[0].first.toStdString() == ("joint_state/header/stamp/sec"));
+  CHECK( flat_container->value[0].second.convert<uint32_t>() == joint_state.header.stamp.sec  );
+  CHECK( flat_container->value[1].first.toStdString() == ("joint_state/header/stamp/nanosec"));
+  CHECK( flat_container->value[1].second.convert<uint32_t>() == joint_state.header.stamp.nanosec  );
 
   CHECK( flat_container->value[2].first.toStdString() == ("joint_state/position[0]"));
   CHECK( flat_container->value[2].second.convert<int>() == 10 );

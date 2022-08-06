@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>ros_msg_parser</name>
+  <name>ros_introspection</name>
   <version>2.0.0</version>
-  <description>
-  Successor of ros_type_introspection
-  </description>
+  <description>Successor of ros_type_introspection</description>
 
   <maintainer email="davide.faconti@gmail.com">Davide Faconti</maintainer>
   <license>MIT</license>
@@ -15,18 +13,14 @@
   <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
-  <depend condition="$ROS_VERSION == 1">roslib</depend>
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
   <depend condition="$ROS_VERSION == 1">roscpp_serialization</depend>
-  <depend condition="$ROS_VERSION == 1">rosbag_storage</depend>
 
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
-  <depend condition="$ROS_VERSION == 2">rcpputils</depend>
-  <depend condition="$ROS_VERSION == 2">rosbag2</depend>
-  <depend condition="$ROS_VERSION == 2">rosbag2_transport</depend>
+  <depend condition="$ROS_VERSION == 2">rosbag2_cpp</depend>
+  <depend condition="$ROS_VERSION == 2">rosidl_typesupport_cpp</depend>
 
   <depend>sensor_msgs</depend>
-  <depend>geometry_msgs</depend>
 
   <export>
        <build_type condition="$ROS_VERSION == 1">catkin</build_type>
