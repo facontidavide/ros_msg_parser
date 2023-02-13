@@ -21,6 +21,8 @@
 *   SOFTWARE.
 */
 
+#include <algorithm>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <boost/utility/string_ref.hpp>
@@ -64,23 +66,30 @@ ROSMessage::ROSMessage(const std::string &msg_def)
 
 void ROSMessage::updateMissingPkgNames(const std::vector<const ROSType*> &all_types)
 {
+  // From http://wiki.ros.org/msg#Fields
+  //   When embedding other Message descriptions, the type name may be relative
+  //   (e.g. "Point32") if it is in the same package; otherwise it must be the
+  //   full Message type (e.g. "std_msgs/String"). The only exception to this
+  //   rule is Header.
   for (ROSField& field: _fields)
   {
-    // if package name is missing, try to find msgName in the list of known_type
-    if( field.type().pkgName().size() == 0 )
+    // if package name is missing, try to find pkgName/msgName in the list of all_types
+    if( field.type().pkgName().size() != 0 ) continue;
+    const auto found = std::find_if(
+        all_types.begin(), all_types.end(),
+        [&](const ROSType* known_type) {
+          return ( (this->type().pkgName().compare( known_type->pkgName() ) == 0) &&
+                   (field.type().msgName().compare( known_type->msgName() ) == 0) );
+        });
+    if (found != all_types.end())
     {
-      for (const ROSType* known_type: all_types)
-      {
-        if( field.type().msgName().compare( known_type->msgName() ) == 0  )
-        {
-          field._type.setPkgName( known_type->pkgName() );
-          break;
-        }
-      }
+      field._type.setPkgName( (*found)->pkgName() );
+    }
+    else if ( field.type().msgName() == "Header" )
+    {
+      field._type.setPkgName( "std_msgs" );
     }
   }
 }
 
 } // end namespace
-
-

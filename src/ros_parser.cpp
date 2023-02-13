@@ -95,7 +95,7 @@ void Parser::registerMessage(const std::string& definition)
         next_msg = getMessageByType(field.type());
         if (next_msg == nullptr)
         {
-          throw std::runtime_error("This type was not registered ");
+          throw std::runtime_error("Type " + field.type().baseName() + " was not registered");
         }
         msg_node->addChild(next_msg);
         MessageTreeNode* new_msg_node = &(msg_node->children().back());
