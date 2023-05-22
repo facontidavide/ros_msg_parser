@@ -522,7 +522,14 @@ bool Parser::deserializeIntoJson(Span<const uint8_t> buffer, std::string* json_t
               {
                 throw std::runtime_error("Buffer overrun");
               }
-              new_value.SetString(reinterpret_cast<const char*>(&buffer[buffer_offset]), string_size, alloc);
+              if(string_size == 0)
+              {
+                new_value.SetString("");
+              }
+              else
+              {
+                new_value.SetString(reinterpret_cast<const char*>(&buffer[buffer_offset]), string_size, alloc);
+              }
               buffer_offset += string_size;
             }
             break;
