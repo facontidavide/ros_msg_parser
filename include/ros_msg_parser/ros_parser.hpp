@@ -26,8 +26,6 @@
 #include <ros_msg_parser/stringtree_leaf.hpp>
 #include <ros_msg_parser/helper_functions.hpp>
 #include <ros_msg_parser/utils/shape_shifter.hpp>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
 
 namespace RosMsgParser{
 
@@ -213,9 +211,6 @@ public:
   void registerParser(const std::string& topic_name,
                       const RosMsgParser::ShapeShifter& msg);
 
-  void registerParser(const std::string& topic_name,
-                      const rosbag::ConnectionInfo &connection);
-
   const Parser* getParser(const std::string& topic_name) const;
 
   const DeserializedMsg *deserialize(const std::string& topic_name,
@@ -223,9 +218,6 @@ public:
 
   const DeserializedMsg* deserialize(const std::string& topic_name,
                                      const ShapeShifter &msg );
-
-  const DeserializedMsg* deserialize(const std::string& topic_name,
-                                     const rosbag::MessageInstance& msg );
 
 private:
   struct CachedPack{

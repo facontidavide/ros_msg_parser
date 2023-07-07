@@ -50,36 +50,6 @@ include_directories(
 
 target_link_libraries(ros_msg_parser ${catkin_LIBRARIES})
 
-
-find_package(benchmark CONFIG)
-if (benchmark_FOUND)
-
-    add_executable(ros_parser_benchmark tests/benchmark.cpp)
-    add_dependencies(ros_parser_benchmark
-        ${${PROJECT_NAME}_EXPORTED_TARGETS}
-        ${catkin_EXPORTED_TARGETS})
-
-    target_link_libraries(ros_parser_benchmark
-        ros_msg_parser
-        ${catkin_LIBRARIES}
-        benchmark::benchmark
-        pthread
-        )
-endif(benchmark_FOUND)
-
-add_executable(simple_example          example/simple.cpp)
-target_link_libraries(simple_example   ros_msg_parser ${catkin_LIBRARIES})
-
-add_executable(rosbag_example          example/rosbag_example.cpp)
-target_link_libraries(rosbag_example   ros_msg_parser ${catkin_LIBRARIES})
-
-add_executable(generic_subscriber        example/generic_subscriber.cpp)
-target_link_libraries(generic_subscriber ros_msg_parser ${catkin_LIBRARIES})
-
-add_executable(selective_deserialization example/selective_deserialization.cpp)
-target_link_libraries(selective_deserialization ros_msg_parser ${catkin_LIBRARIES})
-
-
 #############
 ## Testing ##
 #############
