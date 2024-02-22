@@ -1,3 +1,7 @@
+# Archived
+
+Please check https://github.com/facontidavide/rosx_introspection
+
 # Ros Message Parser
 
 This is the successor of [ros_type_introspection](https://github.com/facontidavide/ros_type_introspection),
